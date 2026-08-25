@@ -215,7 +215,7 @@ export default function StorefrontPage() {
           </h1>
 
           <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
-            Select game items, pay via MoMo or Binance QR with your Order Memo, and collect your delivery directly in your browser.
+            Select game items, pay via MoMo or Binance with your Order Memo, and collect your delivery directly in your browser.
           </p>
 
           {/* Highlights */}
@@ -235,8 +235,8 @@ export default function StorefrontPage() {
                 <RefreshCw className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-pixel text-[9px] text-white">QR / PAY ID</h4>
-                <p className="text-[11px] text-slate-400">MoMo & Binance</p>
+                <h4 className="font-pixel text-[9px] text-white">MOMO / BINANCE</h4>
+                <p className="text-[11px] text-slate-400">Direct transfer memo</p>
               </div>
             </div>
 
@@ -301,7 +301,7 @@ export default function StorefrontPage() {
         onCheckout={handleCheckout}
       />
 
-      {/* Payment & QR Modal */}
+      {/* Payment Modal */}
       <PaymentModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}

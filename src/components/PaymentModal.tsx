@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { 
   X, 
   Copy, 
@@ -9,7 +8,7 @@ import {
   AlertTriangle, 
   Clock, 
   Wallet, 
-  QrCode,
+  CreditCard,
   ShieldCheck,
   Sparkles
 } from "lucide-react";
@@ -45,16 +44,21 @@ export default function PaymentModal({
 
   if (!isOpen || !order) return null;
 
-  const momoPhone = process.env.NEXT_PUBLIC_MOMO_PHONE || "0987654321";
-  const momoName = process.env.NEXT_PUBLIC_MOMO_NAME || "STORE ADMIN";
-  const binancePayId = process.env.NEXT_PUBLIC_BINANCE_PAY_ID || "987654321";
+  const momoPhone =
+    process.env.NEXT_PUBLIC_MOMO_PHONE ||
+    process.env.MOMO_PHONE ||
+    "0987654321";
+  const momoName =
+    process.env.NEXT_PUBLIC_MOMO_NAME ||
+    process.env.MOMO_NAME ||
+    "STORE ADMIN";
+  const binancePayId =
+    process.env.NEXT_PUBLIC_BINANCE_PAY_ID ||
+    process.env.BINANCE_PAY_ID ||
+    "987654321";
 
   const totalVND = Math.round(order.totalAmount);
   const totalUSD = toUSD(order.totalAmount);
-
-  // MoMo QR payload standard
-  const momoPayload = `2|99|${momoPhone}|${momoName}||0|0|${totalVND}|${order.publicMemo}|transfer_p2p`;
-  const binancePayload = `binance://pay?payeeId=${binancePayId}&amount=${totalUSD}&memo=${order.publicMemo}`;
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -86,10 +90,10 @@ export default function PaymentModal({
         <div className="flex items-center justify-between pb-4 border-b-2 border-slate-700 bg-[#0e111f] -mx-6 -mt-6 p-4 mb-4">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-emerald-500 border border-emerald-300 flex items-center justify-center text-slate-950">
-              <QrCode className="w-4 h-4" />
+              <CreditCard className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-pixel text-xs text-white tracking-wider">PAYMENT CHECKOUT</h3>
+              <h3 className="font-pixel text-xs text-white tracking-wider">PAYMENT DETAILS</h3>
               <p className="font-pixel text-[9px] text-emerald-400 mt-0.5">ID: {order.publicMemo}</p>
             </div>
           </div>
@@ -134,7 +138,7 @@ export default function PaymentModal({
             </div>
           </div>
         ) : (
-          /* Payment Instructions & QR Screen */
+          /* Payment Instructions Screen */
           <div className="space-y-4">
             {/* Payment Method Switcher */}
             <div className="grid grid-cols-2 gap-2 bg-[#0e111f] p-1 border-2 border-slate-700">
@@ -147,7 +151,7 @@ export default function PaymentModal({
                 }`}
               >
                 <Wallet className="w-3 h-3" />
-                <span>MoMo QR</span>
+                <span>MoMo Pay</span>
               </button>
               <button
                 onClick={() => setSelectedTab("binance")}
@@ -157,40 +161,26 @@ export default function PaymentModal({
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
-                <QrCode className="w-3 h-3" />
-                <span>Binance ID</span>
+                <CreditCard className="w-3 h-3" />
+                <span>Binance Pay</span>
               </button>
             </div>
 
-            {/* QR Code Card */}
-            <div className="bg-[#0d0f18] border-2 border-slate-700 p-4 flex flex-col items-center justify-center text-center">
-              <div className="bg-white p-2 border-2 border-slate-400 shadow-md">
-                <QRCodeSVG
-                  value={selectedTab === "momo" ? momoPayload : binancePayload}
-                  size={150}
-                  level="M"
-                />
-              </div>
-              <p className="font-pixel text-[9px] text-slate-400 mt-2.5">
-                Scan with {selectedTab === "momo" ? "MoMo" : "Binance"} App
-              </p>
-            </div>
-
             {/* Payment Details & Copy Helpers */}
-            <div className="space-y-2">
+            <div className="space-y-2.5 pt-1">
               {/* Transfer Description / Memo */}
-              <div className="bg-[#161a2e] border-2 border-emerald-500/50 p-2.5 flex items-center justify-between">
+              <div className="bg-[#161a2e] border-2 border-emerald-500/50 p-3 flex items-center justify-between">
                 <div>
                   <span className="block font-pixel text-[8px] text-emerald-400 uppercase">
                     Required Transfer Memo *
                   </span>
-                  <span className="font-pixel text-xs font-bold text-white">
+                  <span className="font-pixel text-sm font-bold text-white">
                     {order.publicMemo}
                   </span>
                 </div>
                 <button
                   onClick={() => copyToClipboard(order.publicMemo, "memo")}
-                  className="flex items-center gap-1 font-pixel text-[9px] px-2 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 hover:bg-emerald-500/40 transition"
+                  className="flex items-center gap-1 font-pixel text-[9px] px-2.5 py-1 bg-emerald-500/20 border border-emerald-400 text-emerald-300 hover:bg-emerald-500/40 transition"
                 >
                   {copiedKey === "memo" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedKey === "memo" ? "COPIED" : "COPY"}</span>
@@ -198,7 +188,7 @@ export default function PaymentModal({
               </div>
 
               {/* Amount */}
-              <div className="bg-[#0e111f] border border-slate-700 p-2.5 flex items-center justify-between">
+              <div className="bg-[#0e111f] border-2 border-slate-700 p-3 flex items-center justify-between">
                 <div>
                   <span className="block font-pixel text-[8px] text-slate-400 uppercase">
                     Payable Amount
@@ -218,7 +208,7 @@ export default function PaymentModal({
                       "amount"
                     )
                   }
-                  className="flex items-center gap-1 font-pixel text-[9px] px-2 py-1 bg-slate-800 border border-slate-600 text-slate-300 hover:text-white transition"
+                  className="flex items-center gap-1 font-pixel text-[9px] px-2.5 py-1 bg-slate-800 border border-slate-600 text-slate-300 hover:text-white transition"
                 >
                   {copiedKey === "amount" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedKey === "amount" ? "COPIED" : "COPY"}</span>
@@ -226,12 +216,12 @@ export default function PaymentModal({
               </div>
 
               {/* Account / Pay ID */}
-              <div className="bg-[#0e111f] border border-slate-700 p-2.5 flex items-center justify-between">
+              <div className="bg-[#0e111f] border-2 border-slate-700 p-3 flex items-center justify-between">
                 <div>
                   <span className="block font-pixel text-[8px] text-slate-400 uppercase">
-                    {selectedTab === "momo" ? `MoMo (${momoName})` : "Binance Pay ID"}
+                    {selectedTab === "momo" ? `MoMo Account (${momoName})` : "Binance Pay ID"}
                   </span>
-                  <span className="font-pixel text-[10px] text-slate-200">
+                  <span className="font-pixel text-xs text-slate-200">
                     {selectedTab === "momo" ? momoPhone : binancePayId}
                   </span>
                 </div>
@@ -239,7 +229,7 @@ export default function PaymentModal({
                   onClick={() =>
                     copyToClipboard(selectedTab === "momo" ? momoPhone : binancePayId, "account")
                   }
-                  className="flex items-center gap-1 font-pixel text-[9px] px-2 py-1 bg-slate-800 border border-slate-600 text-slate-300 hover:text-white transition"
+                  className="flex items-center gap-1 font-pixel text-[9px] px-2.5 py-1 bg-slate-800 border border-slate-600 text-slate-300 hover:text-white transition"
                 >
                   {copiedKey === "account" ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedKey === "account" ? "COPIED" : "COPY"}</span>
@@ -270,4 +260,5 @@ export default function PaymentModal({
     </div>
   );
 }
+
 
