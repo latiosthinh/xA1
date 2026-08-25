@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { orders } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { sendTelegramOrderAlert } from "@/lib/telegram";
 
 export async function POST(
   request: Request,
@@ -17,6 +18,8 @@ export async function POST(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    const order = existing[0];
+
     // Update status to PAID_WAITING_CONFIRM
     await db
       .update(orders)
@@ -26,11 +29,14 @@ export async function POST(
       })
       .where(eq(orders.id, id));
 
+    // Dispatch Telegram bot alert to admin
+    await sendTelegramOrderAlert(order);
+
     return NextResponse.json({
       success: true,
       message: "Order updated to paid pending confirmation",
       status: "PAID_WAITING_CONFIRM",
-      order: existing[0],
+      order,
     });
   } catch (error) {
     console.error("Error updating order payment status:", error);

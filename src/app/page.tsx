@@ -5,6 +5,8 @@ import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import CartDrawer, { CartItem } from "@/components/CartDrawer";
 import PaymentModal, { OrderDetails } from "@/components/PaymentModal";
+import NotificationBell, { OrderMessageItem } from "@/components/NotificationBell";
+import EphemeralMessageModal from "@/components/EphemeralMessageModal";
 import { Product } from "@/lib/schema";
 import { Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
 
@@ -15,6 +17,11 @@ export default function StorefrontPage() {
   const [loading, setLoading] = useState(true);
   const [activeOrder, setActiveOrder] = useState<OrderDetails | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // Ephemeral Message Modal State
+  const [selectedMessage, setSelectedMessage] = useState<OrderMessageItem | null>(null);
+  const [activeClientToken, setActiveClientToken] = useState<string | null>(null);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
 
   // Load cart from localStorage
   useEffect(() => {
@@ -144,12 +151,45 @@ export default function StorefrontPage() {
     setCart([]);
   };
 
+  const handleOpenMessageModal = (msg: OrderMessageItem, token: string) => {
+    setSelectedMessage(msg);
+    setActiveClientToken(token);
+    setIsMessageModalOpen(true);
+  };
+
+  const handleDismissMessage = async (messageId: string, clientToken: string) => {
+    await fetch("/api/orders/acknowledge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId, clientToken }),
+    });
+
+    setIsMessageModalOpen(false);
+    setSelectedMessage(null);
+    setActiveClientToken(null);
+  };
+
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
-      {/* Navbar */}
-      <Navbar cartCount={totalCartCount} onOpenCart={() => setIsCartOpen(true)} />
+      {/* Navbar with Notification Bell */}
+      <Navbar
+        cartCount={totalCartCount}
+        onOpenCart={() => setIsCartOpen(true)}
+        notificationBell={
+          <NotificationBell
+            onOpenModal={handleOpenMessageModal}
+            onNewMessageReceived={(msg) => {
+              const storedOrders = JSON.parse(localStorage.getItem("mmo_customer_orders") || "[]");
+              const match = storedOrders.find((o: { id: string }) => o.id === msg.orderId);
+              if (match) {
+                handleOpenMessageModal(msg, match.clientToken);
+              }
+            }}
+          />
+        }
+      />
 
       {/* Hero Banner */}
       <section className="relative overflow-hidden border-b border-slate-800/80 bg-gradient-to-b from-slate-900/80 to-slate-950 py-12 px-4 sm:px-8">
@@ -257,6 +297,15 @@ export default function StorefrontPage() {
         order={activeOrder}
         onPaymentDone={handlePaymentDone}
       />
+
+      {/* Ephemeral Message Delivery Modal */}
+      <EphemeralMessageModal
+        isOpen={isMessageModalOpen}
+        message={selectedMessage}
+        clientToken={activeClientToken}
+        onDismiss={handleDismissMessage}
+      />
     </div>
   );
 }
+
