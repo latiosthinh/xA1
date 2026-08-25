@@ -52,6 +52,6 @@ Deliver a lightweight e-commerce storefront with Turso SQLite persistence, multi
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Admin Auth & Product Catalog | 0/0 | Not started | - |
+| 1. Foundation, Admin Auth & Product Catalog | 1/1 | Complete | 2026-08-25 |
 | 2. Storefront, Cart & Multi-Payment QR Checkout | 0/0 | Not started | - |
 | 3. Telegram 2-Way Bot Bridge & Realtime Ephemeral Notification | 0/0 | Not started | - |
