@@ -17,6 +17,7 @@ export interface StoredCustomerOrder {
   publicMemo: string;
   clientToken: string;
   createdAt: string;
+  lastNoticedAt?: number; // timestamp in ms
 }
 
 interface StoreState {
@@ -47,6 +48,7 @@ interface StoreState {
   customerOrders: StoredCustomerOrder[];
   acknowledgedMsgIds: string[];
   addCustomerOrder: (order: StoredCustomerOrder) => void;
+  updateOrderLastNoticed: (orderId: string, timestamp: number) => void;
   acknowledgeMessageId: (msgId: string) => void;
 }
 
@@ -128,6 +130,12 @@ export const useStore = create<StoreState>()(
       addCustomerOrder: (order) =>
         set((state) => ({
           customerOrders: [...state.customerOrders, order],
+        })),
+      updateOrderLastNoticed: (orderId, timestamp) =>
+        set((state) => ({
+          customerOrders: state.customerOrders.map((o) =>
+            o.id === orderId ? { ...o, lastNoticedAt: timestamp } : o
+          ),
         })),
       acknowledgeMessageId: (msgId) =>
         set((state) => ({

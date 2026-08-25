@@ -22,7 +22,6 @@ export async function POST(request: Request) {
     const update = await request.json();
     console.log("Telegram update received:", JSON.stringify(update));
 
-    // Handle message from user or channel/group post
     const messageObj = update?.message || update?.channel_post;
     const rawText = (messageObj?.text || "").trim();
     const chatId = messageObj?.chat?.id;
@@ -33,7 +32,6 @@ export async function POST(request: Request) {
 
     await initDb();
 
-    // Support commands starting with /send, /reply, /broadcast, OR handle bot mentions like /send@botname
     const firstWord = rawText.split(/\s+/)[0];
     const command = firstWord.split("@")[0].toLowerCase();
     const restText = rawText.substring(firstWord.length).trim();
@@ -70,69 +68,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 2. /reply <orderId> <content>
-    if (command === "/reply") {
-      const parts = restText.split(/\s+/);
-      if (parts.length < 2) {
-        if (bot && chatId) {
-          await bot.api.sendMessage(
-            chatId,
-            `ℹ️ *Usage:* \`/reply <OrderID> <Your message / account details>\``,
-            { parse_mode: "Markdown" }
-          );
-        }
-        return NextResponse.json({ ok: true });
-      }
-
-      const targetMemo = parts[0].trim();
-      const content = parts.slice(1).join(" ").trim();
-
-      const matchingOrders = await db
-        .select()
-        .from(orders)
-        .where(or(eq(orders.publicMemo, targetMemo), eq(orders.id, targetMemo)))
-        .limit(1);
-
-      if (matchingOrders.length > 0) {
-        const matchedOrder = matchingOrders[0];
-        const messageId = crypto.randomUUID();
-
-        await db.insert(orderMessages).values({
-          id: messageId,
-          orderId: matchedOrder.id,
-          publicMemo: matchedOrder.publicMemo,
-          sender: "ADMIN",
-          content,
-          status: "PENDING",
-          createdAt: new Date(),
-        });
-
-        if (bot && chatId) {
-          await bot.api.sendMessage(
-            chatId,
-            `✅ *Message delivered to storefront for \`${matchedOrder.publicMemo}\`!*\nCustomer notification bell is now active.`,
-            { parse_mode: "Markdown" }
-          );
-        }
-      } else {
-        if (bot && chatId) {
-          await bot.api.sendMessage(
-            chatId,
-            `⚠️ Order \`${targetMemo}\` not found in database.`,
-            { parse_mode: "Markdown" }
-          );
-        }
-      }
-      return NextResponse.json({ ok: true });
-    }
-
-    // 3. /send [orderId] <content> OR /send <content>
-    if (command === "/send") {
+    // 2. /reply or /send: Check statusCode (1, 0, 2) or standard text
+    if (command === "/reply" || command === "/send") {
       if (!restText) {
         if (bot && chatId) {
           await bot.api.sendMessage(
             chatId,
-            `ℹ️ *Usage options:*\n• Direct to order: \`/send <OrderID> <Message>\`\n• Global broadcast: \`/send <Message>\``,
+            `ℹ️ *Usage options:*\n• Status code update: \`/send <OrderID> 1\` (1=Success, 0=Failed, 2=Verify)\n• Custom message: \`/send <OrderID> <Message>\`\n• Global broadcast: \`/send <Message>\``,
             { parse_mode: "Markdown" }
           );
         }
@@ -142,7 +84,7 @@ export async function POST(request: Request) {
       const parts = restText.split(/\s+/);
       const possibleOrderId = parts[0].trim();
 
-      // Check if first word matches an existing order
+      // Check if first arg matches an order
       const matchingOrders = await db
         .select()
         .from(orders)
@@ -151,9 +93,41 @@ export async function POST(request: Request) {
 
       if (matchingOrders.length > 0 && parts.length >= 2) {
         const matchedOrder = matchingOrders[0];
-        const content = parts.slice(1).join(" ").trim();
-        const messageId = crypto.randomUUID();
+        const statusArg = parts[1].trim();
+        const customNote = parts.slice(2).join(" ").trim();
 
+        let content = "";
+        let newOrderStatus = matchedOrder.status;
+
+        // Code 1: Payment Success
+        if (statusArg === "1") {
+          content = "CODE:1" + (customNote ? ` | ${customNote}` : "");
+          newOrderStatus = "COMPLETED";
+        }
+        // Code 0: Payment Not Success / Rejected
+        else if (statusArg === "0") {
+          content = "CODE:0" + (customNote ? ` | ${customNote}` : "");
+          newOrderStatus = "CANCELLED";
+        }
+        // Code 2: Payment Needs Verification
+        else if (statusArg === "2") {
+          content = "CODE:2" + (customNote ? ` | ${customNote}` : "");
+          newOrderStatus = "PAID_WAITING_CONFIRM";
+        }
+        // Freeform reply
+        else {
+          content = parts.slice(1).join(" ").trim();
+        }
+
+        // Update order status if applicable
+        if (newOrderStatus !== matchedOrder.status) {
+          await db
+            .update(orders)
+            .set({ status: newOrderStatus, updatedAt: new Date() })
+            .where(eq(orders.id, matchedOrder.id));
+        }
+
+        const messageId = crypto.randomUUID();
         await db.insert(orderMessages).values({
           id: messageId,
           orderId: matchedOrder.id,
@@ -165,14 +139,33 @@ export async function POST(request: Request) {
         });
 
         if (bot && chatId) {
+          const statusLabel =
+            statusArg === "1"
+              ? "✅ PAYMENT SUCCESS"
+              : statusArg === "0"
+              ? "❌ PAYMENT REJECTED"
+              : statusArg === "2"
+              ? "⚠️ NEED VERIFICATION"
+              : "💬 DIRECT MESSAGE";
+
           await bot.api.sendMessage(
             chatId,
-            `✅ *Message sent to customer of \`${matchedOrder.publicMemo}\`!*`,
+            `*${statusLabel} dispatched for \`${matchedOrder.publicMemo}\`!*\nStatus modal is now live for the customer.`,
             { parse_mode: "Markdown" }
           );
         }
+        return NextResponse.json({ ok: true });
+      } else if (matchingOrders.length === 0 && parts.length === 1 && (command === "/reply" || command === "/send")) {
+        if (bot && chatId) {
+          await bot.api.sendMessage(
+            chatId,
+            `⚠️ Order not found or missing message content. Usage: \`/send <OrderID> 1\` or \`/send <OrderID> <Message>\``,
+            { parse_mode: "Markdown" }
+          );
+        }
+        return NextResponse.json({ ok: true });
       } else {
-        // Broadcast globally
+        // Global broadcast
         const content = restText;
         const messageId = crypto.randomUUID();
 
@@ -189,18 +182,12 @@ export async function POST(request: Request) {
         if (bot && chatId) {
           await bot.api.sendMessage(
             chatId,
-            `📢 *Global site broadcast sent!*\nMessage: "${content}"`,
+            `📢 *Global broadcast sent!*\nMessage: "${content}"`,
             { parse_mode: "Markdown" }
           );
         }
+        return NextResponse.json({ ok: true });
       }
-      return NextResponse.json({ ok: true });
-    }
-
-    // 4. In Telegram groups or channels, ignore casual chit-chat unless explicitly starting with /
-    // This prevents every casual message in group from flooding site with broadcasts
-    if (!rawText.startsWith("/")) {
-      return NextResponse.json({ ok: true });
     }
 
     return NextResponse.json({ ok: true });
@@ -209,5 +196,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 }
+
 
 
