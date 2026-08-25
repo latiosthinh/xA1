@@ -23,7 +23,7 @@ async function runMilestoneE2EAudit() {
     id: pId,
     name: "Audit Test Product",
     description: "Audit Description",
-    price: 99.99,
+    price: 70000,
     imageUrl: "https://example.com/test.jpg",
   });
   const [createdProduct] = await db.select().from(products).where(eq(products.id, pId));
@@ -38,8 +38,8 @@ async function runMilestoneE2EAudit() {
     id: oId,
     publicMemo: memo,
     clientToken,
-    itemsJson: JSON.stringify([{ id: pId, name: createdProduct.name, price: 99.99, quantity: 1 }]),
-    totalAmount: 99.99,
+    itemsJson: JSON.stringify([{ id: pId, name: createdProduct.name, price: 70000, quantity: 1 }]),
+    totalAmount: 70000,
     paymentMethod: "momo",
     status: "PENDING",
   });

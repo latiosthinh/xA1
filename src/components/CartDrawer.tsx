@@ -1,6 +1,7 @@
 "use client";
 
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
+import { formatDualPrice } from "@/lib/currency";
 
 export interface CartItem {
   id: string;
@@ -86,8 +87,8 @@ export default function CartDrawer({
 
                   <div className="flex-1 min-w-0">
                     <h4 className="font-pixel text-[10px] text-white truncate">{item.name}</h4>
-                    <p className="font-pixel text-xs text-emerald-400 mt-1">
-                      ${(item.price * item.quantity).toFixed(2)}
+                    <p className="font-pixel text-[10px] text-emerald-400 mt-1">
+                      {formatDualPrice(item.price * item.quantity)}
                     </p>
 
                     <div className="flex items-center justify-between mt-2">
@@ -126,9 +127,9 @@ export default function CartDrawer({
           {/* Footer & Checkout */}
           {items.length > 0 && (
             <div className="p-4 border-t-2 border-slate-700 bg-[#0e111f] space-y-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-sm flex-wrap gap-2">
                 <span className="font-pixel text-[11px] text-slate-400">TOTAL:</span>
-                <span className="font-pixel text-sm text-emerald-400">${subtotal.toFixed(2)}</span>
+                <span className="font-pixel text-xs text-emerald-400">{formatDualPrice(subtotal)}</span>
               </div>
 
               <button

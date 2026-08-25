@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 
 export interface OrderMessageItem {
   id: string;
-  orderId: string;
+  orderId?: string | null;
   publicMemo: string;
   sender: string;
   content: string;
@@ -14,7 +14,7 @@ export interface OrderMessageItem {
 }
 
 interface NotificationBellProps {
-  onOpenModal: (message: OrderMessageItem, clientToken: string) => void;
+  onOpenModal: (message: OrderMessageItem, clientToken: string | null) => void;
   onNewMessageReceived?: (message: OrderMessageItem) => void;
 }
 
@@ -28,19 +28,20 @@ export default function NotificationBell({
   const pollOrders = async () => {
     try {
       const storedOrdersRaw = localStorage.getItem("mmo_customer_orders");
-      if (!storedOrdersRaw) return;
-
-      const storedOrders = JSON.parse(storedOrdersRaw);
-      if (!Array.isArray(storedOrders) || storedOrders.length === 0) return;
+      const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
+      const acknowledgedIds = JSON.parse(localStorage.getItem("mmo_acknowledged_msg_ids") || "[]");
 
       const res = await fetch("/api/orders/poll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orders: storedOrders.map((o: { id: string; clientToken: string }) => ({
-            id: o.id,
-            clientToken: o.clientToken,
-          })),
+          orders: Array.isArray(storedOrders)
+            ? storedOrders.map((o: { id: string; clientToken: string }) => ({
+                id: o.id,
+                clientToken: o.clientToken,
+              }))
+            : [],
+          acknowledgedIds,
         }),
       });
 
@@ -53,10 +54,8 @@ export default function NotificationBell({
         setMessages(newMsgs);
         setHasUnread(true);
 
-        // Auto trigger modal for the latest message if not already shown
         const latest = newMsgs[0];
-        const matchingOrder = storedOrders.find((o: { id: string }) => o.id === latest.orderId);
-        if (matchingOrder && onNewMessageReceived) {
+        if (onNewMessageReceived) {
           onNewMessageReceived(latest);
         }
       } else {
@@ -81,12 +80,13 @@ export default function NotificationBell({
     if (messages.length > 0) {
       const storedOrders = JSON.parse(localStorage.getItem("mmo_customer_orders") || "[]");
       const latest = messages[0];
-      const match = storedOrders.find((o: { id: string }) => o.id === latest.orderId);
-      if (match) {
-        onOpenModal(latest, match.clientToken);
-      }
+      const match = latest.orderId
+        ? storedOrders.find((o: { id: string }) => o.id === latest.orderId)
+        : null;
+
+      onOpenModal(latest, match ? match.clientToken : null);
     } else {
-      alert("No new messages from admin. Orders are currently processing.");
+      alert("No new messages from admin.");
     }
   };
 
@@ -107,3 +107,4 @@ export default function NotificationBell({
     </button>
   );
 }
+

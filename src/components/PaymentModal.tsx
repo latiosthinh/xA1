@@ -13,12 +13,13 @@ import {
   ShieldCheck,
   Sparkles
 } from "lucide-react";
+import { formatVND, formatUSD, toUSD } from "@/lib/currency";
 
 export interface OrderDetails {
   id: string;
   publicMemo: string;
   clientToken: string;
-  totalAmount: number;
+  totalAmount: number; // in VND
   paymentMethod: "momo" | "binance";
   items: { id: string; name: string; price: number; quantity: number }[];
   status: string;
@@ -48,10 +49,12 @@ export default function PaymentModal({
   const momoName = process.env.NEXT_PUBLIC_MOMO_NAME || "STORE ADMIN";
   const binancePayId = process.env.NEXT_PUBLIC_BINANCE_PAY_ID || "987654321";
 
-  // MoMo QR payload standard (or VietQR standard string)
-  // Format: 2|99|0987654321|STORE ADMIN||0|0|amount|publicMemo|transfer_p2p
-  const momoPayload = `2|99|${momoPhone}|${momoName}||0|0|${Math.round(order.totalAmount * 25000)}|${order.publicMemo}|transfer_p2p`;
-  const binancePayload = `binance://pay?payeeId=${binancePayId}&amount=${order.totalAmount}&memo=${order.publicMemo}`;
+  const totalVND = Math.round(order.totalAmount);
+  const totalUSD = toUSD(order.totalAmount);
+
+  // MoMo QR payload standard
+  const momoPayload = `2|99|${momoPhone}|${momoName}||0|0|${totalVND}|${order.publicMemo}|transfer_p2p`;
+  const binancePayload = `binance://pay?payeeId=${binancePayId}&amount=${totalUSD}&memo=${order.publicMemo}`;
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -202,16 +205,16 @@ export default function PaymentModal({
                   </span>
                   <span className="font-pixel text-xs text-emerald-400">
                     {selectedTab === "momo"
-                      ? `${(order.totalAmount * 25000).toLocaleString("vi-VN")} VND`
-                      : `$${order.totalAmount.toFixed(2)} USDT`}
+                      ? formatVND(order.totalAmount)
+                      : `${totalUSD} USDT (${formatUSD(order.totalAmount)})`}
                   </span>
                 </div>
                 <button
                   onClick={() =>
                     copyToClipboard(
                       selectedTab === "momo"
-                        ? String(Math.round(order.totalAmount * 25000))
-                        : String(order.totalAmount.toFixed(2)),
+                        ? String(totalVND)
+                        : String(totalUSD),
                       "amount"
                     )
                   }
@@ -267,3 +270,4 @@ export default function PaymentModal({
     </div>
   );
 }
+

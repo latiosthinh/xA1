@@ -8,7 +8,8 @@ import {
   MessageSquare, 
   ShieldAlert, 
   Bookmark,
-  CheckCircle2
+  CheckCircle2,
+  Radio
 } from "lucide-react";
 import { OrderMessageItem } from "./NotificationBell";
 
@@ -16,7 +17,7 @@ interface EphemeralMessageModalProps {
   isOpen: boolean;
   message: OrderMessageItem | null;
   clientToken: string | null;
-  onDismiss: (messageId: string, clientToken: string) => Promise<void>;
+  onDismiss: (messageId: string, clientToken: string | null) => Promise<void>;
 }
 
 export default function EphemeralMessageModal({
@@ -30,6 +31,8 @@ export default function EphemeralMessageModal({
 
   if (!isOpen || !message) return null;
 
+  const isGlobal = !message.orderId || message.publicMemo === "GLOBAL";
+
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
     setCopied(true);
@@ -37,7 +40,6 @@ export default function EphemeralMessageModal({
   };
 
   const handleConfirmClose = async () => {
-    if (!clientToken) return;
     setIsDismissing(true);
     try {
       await onDismiss(message.id, clientToken);
@@ -50,31 +52,45 @@ export default function EphemeralMessageModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#121524] border-2 border-rose-500 p-6 shadow-2xl relative my-8 shadow-pixel-lg">
-        {/* Urgent Warning Header */}
+      <div className={`w-full max-w-lg bg-[#121524] border-2 ${
+        isGlobal ? "border-amber-500" : "border-rose-500"
+      } p-6 shadow-2xl relative my-8 shadow-pixel-lg`}>
+        {/* Header */}
         <div className="flex items-start gap-3.5 pb-4 border-b-2 border-slate-700 bg-[#0e111f] -mx-6 -mt-6 p-4 mb-4">
-          <div className="w-9 h-9 bg-rose-600/30 border border-rose-500 flex items-center justify-center text-rose-400 shrink-0">
-            <ShieldAlert className="w-5 h-5" />
+          <div className={`w-9 h-9 ${
+            isGlobal ? "bg-amber-600/30 border-amber-500 text-amber-400" : "bg-rose-600/30 border-rose-500 text-rose-400"
+          } border flex items-center justify-center shrink-0`}>
+            {isGlobal ? <Radio className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
           </div>
           <div>
             <h3 className="font-pixel text-xs text-white tracking-wider flex items-center gap-2">
-              <span>ADMIN DELIVERY</span>
-              <span className="font-pixel text-[8px] px-1.5 py-0.5 bg-rose-500 text-slate-950">
-                EPHEMERAL
+              <span>{isGlobal ? "STORE ANNOUNCEMENT" : "ADMIN DELIVERY"}</span>
+              <span className={`font-pixel text-[8px] px-1.5 py-0.5 ${
+                isGlobal ? "bg-amber-400 text-slate-950" : "bg-rose-500 text-slate-950"
+              }`}>
+                {isGlobal ? "BROADCAST" : "EPHEMERAL"}
               </span>
             </h3>
-            <p className="font-pixel text-[9px] text-emerald-400 mt-1">ORDER ID: {message.publicMemo}</p>
+            <p className="font-pixel text-[9px] text-emerald-400 mt-1">
+              {isGlobal ? "BROADCAST TO ALL USERS" : `ORDER ID: ${message.publicMemo}`}
+            </p>
           </div>
         </div>
 
-        {/* Warning Callout Box */}
-        <div className="my-4 bg-rose-950/60 border-2 border-rose-600 p-3.5 space-y-1.5">
-          <div className="flex items-center gap-2 text-rose-400 font-pixel text-[9px]">
+        {/* Callout Box */}
+        <div className={`my-4 ${
+          isGlobal ? "bg-amber-950/40 border-amber-600/60" : "bg-rose-950/60 border-rose-600"
+        } border-2 p-3.5 space-y-1.5`}>
+          <div className={`flex items-center gap-2 ${
+            isGlobal ? "text-amber-400" : "text-rose-400"
+          } font-pixel text-[9px]`}>
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            <span>WARNING: DISAPPEARS ON CLOSE!</span>
+            <span>{isGlobal ? "OFFICIAL NOTICE FROM OPERATOR" : "WARNING: DISAPPEARS ON CLOSE!"}</span>
           </div>
           <p className="text-xs text-slate-200 leading-relaxed">
-            This message and credentials are one-time only. <strong>Copy or write down your details right now!</strong>
+            {isGlobal
+              ? "This broadcast was published live by store operator for all site visitors."
+              : "This message and credentials are one-time only. Copy or write down your details right now!"}
           </p>
         </div>
 
@@ -107,15 +123,18 @@ export default function EphemeralMessageModal({
             className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-pixel text-xs py-3 px-4 border-2 border-emerald-300 shadow-pixel-sm active:translate-y-0.5 transition disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{isDismissing ? "CLOSING..." : "I SAVED IT — CLOSE & DISMISS"}</span>
+            <span>{isDismissing ? "CLOSING..." : isGlobal ? "DISMISS ANNOUNCEMENT" : "I SAVED IT — CLOSE & DISMISS"}</span>
           </button>
 
-          <p className="text-[10px] text-center text-slate-500 flex items-center justify-center gap-1">
-            <Bookmark className="w-3 h-3 text-amber-400" />
-            <span>Data cannot be recovered after closing this window.</span>
-          </p>
+          {!isGlobal && (
+            <p className="text-[10px] text-center text-slate-500 flex items-center justify-center gap-1">
+              <Bookmark className="w-3 h-3 text-amber-400" />
+              <span>Data cannot be recovered after closing this window.</span>
+            </p>
+          )}
         </div>
       </div>
     </div>
   );
 }
+

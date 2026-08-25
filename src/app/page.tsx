@@ -151,13 +151,20 @@ export default function StorefrontPage() {
     setCart([]);
   };
 
-  const handleOpenMessageModal = (msg: OrderMessageItem, token: string) => {
+  const handleOpenMessageModal = (msg: OrderMessageItem, token: string | null) => {
     setSelectedMessage(msg);
     setActiveClientToken(token);
     setIsMessageModalOpen(true);
   };
 
-  const handleDismissMessage = async (messageId: string, clientToken: string) => {
+  const handleDismissMessage = async (messageId: string, clientToken: string | null) => {
+    // Record acknowledged message in local storage so client doesn't see global notice again
+    const localAck = JSON.parse(localStorage.getItem("mmo_acknowledged_msg_ids") || "[]");
+    if (!localAck.includes(messageId)) {
+      localAck.push(messageId);
+      localStorage.setItem("mmo_acknowledged_msg_ids", JSON.stringify(localAck));
+    }
+
     await fetch("/api/orders/acknowledge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -181,10 +188,14 @@ export default function StorefrontPage() {
           <NotificationBell
             onOpenModal={handleOpenMessageModal}
             onNewMessageReceived={(msg) => {
-              const storedOrders = JSON.parse(localStorage.getItem("mmo_customer_orders") || "[]");
-              const match = storedOrders.find((o: { id: string }) => o.id === msg.orderId);
-              if (match) {
-                handleOpenMessageModal(msg, match.clientToken);
+              if (!msg.orderId || msg.publicMemo === "GLOBAL") {
+                handleOpenMessageModal(msg, null);
+              } else {
+                const storedOrders = JSON.parse(localStorage.getItem("mmo_customer_orders") || "[]");
+                const match = storedOrders.find((o: { id: string }) => o.id === msg.orderId);
+                if (match) {
+                  handleOpenMessageModal(msg, match.clientToken);
+                }
               }
             }}
           />

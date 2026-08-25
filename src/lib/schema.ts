@@ -24,8 +24,8 @@ export const orders = sqliteTable("orders", {
 
 export const orderMessages = sqliteTable("order_messages", {
   id: text("id").primaryKey(),
-  orderId: text("order_id").notNull().references(() => orders.id),
-  publicMemo: text("public_memo").notNull(),
+  orderId: text("order_id").references(() => orders.id), // Nullable for global broadcast
+  publicMemo: text("public_memo").notNull().default("GLOBAL"), // e.g. ORD-1234 or GLOBAL
   sender: text("sender").notNull().default("ADMIN"), // ADMIN | USER
   content: text("content").notNull(),
   status: text("status").notNull().default("PENDING"), // PENDING, DELIVERED, ACKNOWLEDGED

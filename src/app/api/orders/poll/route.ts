@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { orders, orderMessages } from "@/lib/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { eq, and, ne, isNull, or } from "drizzle-orm";
 
 interface OrderTokenPair {
   id: string;
@@ -13,46 +13,64 @@ export async function POST(request: Request) {
     await initDb();
     const body = await request.json();
     const orderPairs: OrderTokenPair[] = body.orders || [];
-
-    if (!Array.isArray(orderPairs) || orderPairs.length === 0) {
-      return NextResponse.json({ messages: [] });
-    }
+    const acknowledgedIds: string[] = body.acknowledgedIds || [];
 
     const unreadMessages = [];
 
-    for (const pair of orderPairs) {
-      if (!pair.id || !pair.clientToken) continue;
+    // 1. Fetch Global Broadcasts (orderId is null or publicMemo is 'GLOBAL')
+    const globalMsgs = await db
+      .select()
+      .from(orderMessages)
+      .where(
+        and(
+          or(isNull(orderMessages.orderId), eq(orderMessages.publicMemo, "GLOBAL")),
+          ne(orderMessages.status, "ACKNOWLEDGED")
+        )
+      );
 
-      // Verify order ownership with client token
-      const validOrder = await db
-        .select()
-        .from(orders)
-        .where(and(eq(orders.id, pair.id), eq(orders.clientToken, pair.clientToken)))
-        .limit(1);
+    for (const gMsg of globalMsgs) {
+      if (!acknowledgedIds.includes(gMsg.id)) {
+        unreadMessages.push(gMsg);
+      }
+    }
 
-      if (validOrder.length === 0) continue;
+    // 2. Fetch Targeted Order Messages if order pairs provided
+    if (Array.isArray(orderPairs) && orderPairs.length > 0) {
+      for (const pair of orderPairs) {
+        if (!pair.id || !pair.clientToken) continue;
 
-      // Fetch pending or delivered (unacknowledged) messages
-      const msgs = await db
-        .select()
-        .from(orderMessages)
-        .where(
-          and(
-            eq(orderMessages.orderId, pair.id),
-            ne(orderMessages.status, "ACKNOWLEDGED")
-          )
-        );
+        // Verify order ownership with client token
+        const validOrder = await db
+          .select()
+          .from(orders)
+          .where(and(eq(orders.id, pair.id), eq(orders.clientToken, pair.clientToken)))
+          .limit(1);
 
-      if (msgs.length > 0) {
-        unreadMessages.push(...msgs);
+        if (validOrder.length === 0) continue;
 
-        // Mark as DELIVERED
-        for (const msg of msgs) {
-          if (msg.status === "PENDING") {
-            await db
-              .update(orderMessages)
-              .set({ status: "DELIVERED" })
-              .where(eq(orderMessages.id, msg.id));
+        // Fetch targeted unacknowledged messages
+        const msgs = await db
+          .select()
+          .from(orderMessages)
+          .where(
+            and(
+              eq(orderMessages.orderId, pair.id),
+              ne(orderMessages.status, "ACKNOWLEDGED")
+            )
+          );
+
+        if (msgs.length > 0) {
+          for (const msg of msgs) {
+            if (!acknowledgedIds.includes(msg.id)) {
+              unreadMessages.push(msg);
+
+              if (msg.status === "PENDING") {
+                await db
+                  .update(orderMessages)
+                  .set({ status: "DELIVERED" })
+                  .where(eq(orderMessages.id, msg.id));
+              }
+            }
           }
         }
       }
@@ -64,3 +82,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to poll messages" }, { status: 500 });
   }
 }
+

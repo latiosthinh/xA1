@@ -9,8 +9,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { messageId, clientToken } = body;
 
-    if (!messageId || !clientToken) {
-      return NextResponse.json({ error: "Message ID and client token required" }, { status: 400 });
+    if (!messageId) {
+      return NextResponse.json({ error: "Message ID required" }, { status: 400 });
     }
 
     // Find the message
@@ -24,22 +24,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Message not found" }, { status: 404 });
     }
 
-    // Validate that caller holds clientToken for this order
-    const order = await db
-      .select()
-      .from(orders)
-      .where(and(eq(orders.id, msg[0].orderId), eq(orders.clientToken, clientToken)))
-      .limit(1);
+    const message = msg[0];
 
-    if (order.length === 0) {
-      return NextResponse.json({ error: "Unauthorized token" }, { status: 403 });
+    // If global message (no orderId or publicMemo === "GLOBAL"), clientToken is optional
+    if (message.orderId) {
+      if (!clientToken) {
+        return NextResponse.json({ error: "Client token required for order message" }, { status: 400 });
+      }
+
+      // Validate that caller holds clientToken for this order
+      const order = await db
+        .select()
+        .from(orders)
+        .where(and(eq(orders.id, message.orderId), eq(orders.clientToken, clientToken)))
+        .limit(1);
+
+      if (order.length === 0) {
+        return NextResponse.json({ error: "Unauthorized token" }, { status: 403 });
+      }
+
+      // Mark targeted order message as ACKNOWLEDGED
+      await db
+        .update(orderMessages)
+        .set({ status: "ACKNOWLEDGED" })
+        .where(eq(orderMessages.id, messageId));
     }
-
-    // Mark as ACKNOWLEDGED
-    await db
-      .update(orderMessages)
-      .set({ status: "ACKNOWLEDGED" })
-      .where(eq(orderMessages.id, messageId));
 
     return NextResponse.json({ success: true, message: "Acknowledged" });
   } catch (error) {
@@ -47,3 +56,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to acknowledge message" }, { status: 500 });
   }
 }
+

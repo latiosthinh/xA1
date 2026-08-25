@@ -47,16 +47,26 @@ export async function initDb() {
     );
   `);
 
-  await rawClient.execute(`
-    CREATE TABLE IF NOT EXISTS order_messages (
-      id TEXT PRIMARY KEY,
-      order_id TEXT NOT NULL,
-      public_memo TEXT NOT NULL,
-      sender TEXT NOT NULL DEFAULT 'ADMIN',
-      content TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'PENDING',
-      created_at INTEGER DEFAULT (unixepoch()),
-      FOREIGN KEY (order_id) REFERENCES orders (id)
-    );
-  `);
+  // Recreate or migrate order_messages table if order_id has NOT NULL constraint
+  try {
+    await rawClient.execute(`
+      CREATE TABLE IF NOT EXISTS order_messages_new (
+        id TEXT PRIMARY KEY,
+        order_id TEXT,
+        public_memo TEXT NOT NULL DEFAULT 'GLOBAL',
+        sender TEXT NOT NULL DEFAULT 'ADMIN',
+        content TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        created_at INTEGER DEFAULT (unixepoch()),
+        FOREIGN KEY (order_id) REFERENCES orders (id)
+      );
+    `);
+    await rawClient.execute(`
+      INSERT OR IGNORE INTO order_messages_new SELECT id, order_id, public_memo, sender, content, status, created_at FROM order_messages;
+    `);
+    await rawClient.execute(`DROP TABLE order_messages;`);
+    await rawClient.execute(`ALTER TABLE order_messages_new RENAME TO order_messages;`);
+  } catch {
+    // Migration done or table newly created
+  }
 }

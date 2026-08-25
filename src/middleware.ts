@@ -11,6 +11,11 @@ const COOKIE_NAME = "mmo_admin_session";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Skip internal next dev websocket / HMR paths
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) {
+    return NextResponse.next();
+  }
+
   // Protect /admin routes (except /admin/login)
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
     const token = request.cookies.get(COOKIE_NAME)?.value;

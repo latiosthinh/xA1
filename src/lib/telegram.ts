@@ -1,4 +1,5 @@
 import { Bot } from "grammy";
+import { formatDualPrice, formatVND, formatUSD } from "./currency";
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -24,7 +25,7 @@ export async function sendTelegramOrderAlert(order: {
       itemsList = parsedItems
         .map(
           (item: { name: string; quantity: number; price: number }) =>
-            `• ${item.name} x${item.quantity} ($${(item.price * item.quantity).toFixed(2)})`
+            `• ${item.name} x${item.quantity} (${formatDualPrice(item.price * item.quantity)})`
         )
         .join("\n");
     } catch {
@@ -34,10 +35,12 @@ export async function sendTelegramOrderAlert(order: {
     const message = `🚨 *NEW PAYMENT RECEIVED*\n\n` +
       `*Order ID / Memo:* \`${order.publicMemo}\`\n` +
       `*Method:* ${order.paymentMethod.toUpperCase()}\n` +
-      `*Total:* $${order.totalAmount.toFixed(2)}\n\n` +
+      `*Total:* ${formatDualPrice(order.totalAmount)}\n\n` +
       `*Items:*\n${itemsList}\n\n` +
-      `💬 *To reply to customer, send:*\n` +
-      `\`/reply ${order.publicMemo} <Your message / account info>\``;
+      `💬 *To reply directly to customer:*\n` +
+      `\`/send ${order.publicMemo} <Credentials / Message>\`\n\n` +
+      `📢 *To broadcast globally to all visitors:*\n` +
+      `\`/send <Announcement Message>\``;
 
     await bot.api.sendMessage(adminChatId, message, { parse_mode: "Markdown" });
   } catch (error) {

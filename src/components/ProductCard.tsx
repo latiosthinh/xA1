@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Minus, ShoppingCart, Sparkles, Ban } from "lucide-react";
 import { Product } from "@/lib/schema";
+import { formatDualPrice } from "@/lib/currency";
 
 interface ProductCardProps {
   product: Product;
@@ -68,9 +69,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
               </h3>
             </div>
 
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="font-pixel text-xs text-emerald-400">
-                ${product.price.toFixed(2)}
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span className="font-pixel text-[11px] text-emerald-400">
+                {formatDualPrice(product.price)}
               </span>
 
               <span
