@@ -26,13 +26,12 @@ export async function POST(request: Request) {
 
     const message = msg[0];
 
-    // If global message (no orderId or publicMemo === "GLOBAL"), clientToken is optional
-    if (message.orderId) {
+    // If targeted order message, verify client token
+    if (message.orderId && message.publicMemo !== "GLOBAL") {
       if (!clientToken) {
         return NextResponse.json({ error: "Client token required for order message" }, { status: 400 });
       }
 
-      // Validate that caller holds clientToken for this order
       const order = await db
         .select()
         .from(orders)
@@ -42,13 +41,13 @@ export async function POST(request: Request) {
       if (order.length === 0) {
         return NextResponse.json({ error: "Unauthorized token" }, { status: 403 });
       }
-
-      // Mark targeted order message as ACKNOWLEDGED
-      await db
-        .update(orderMessages)
-        .set({ status: "ACKNOWLEDGED" })
-        .where(eq(orderMessages.id, messageId));
     }
+
+    // Mark message as ACKNOWLEDGED
+    await db
+      .update(orderMessages)
+      .set({ status: "ACKNOWLEDGED" })
+      .where(eq(orderMessages.id, messageId));
 
     return NextResponse.json({ success: true, message: "Acknowledged" });
   } catch (error) {
@@ -56,4 +55,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to acknowledge message" }, { status: 500 });
   }
 }
+
 

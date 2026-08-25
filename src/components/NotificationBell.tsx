@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { useStore } from "@/lib/store";
 
@@ -25,6 +25,7 @@ export default function NotificationBell({
 }: NotificationBellProps) {
   const [messages, setMessages] = useState<OrderMessageItem[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
+  const promptedMsgIdsRef = useRef<Set<string>>(new Set());
 
   const customerOrders = useStore((s) => s.customerOrders);
   const acknowledgedMsgIds = useStore((s) => s.acknowledgedMsgIds);
@@ -55,8 +56,12 @@ export default function NotificationBell({
         setHasUnread(true);
 
         const latest = newMsgs[0];
-        if (onNewMessageReceived) {
-          onNewMessageReceived(latest);
+        // Only auto popup ONCE per message ID unless clicked manually
+        if (!promptedMsgIdsRef.current.has(latest.id)) {
+          promptedMsgIdsRef.current.add(latest.id);
+          if (onNewMessageReceived) {
+            onNewMessageReceived(latest);
+          }
         }
       } else {
         setMessages([]);
@@ -103,5 +108,6 @@ export default function NotificationBell({
     </button>
   );
 }
+
 
 

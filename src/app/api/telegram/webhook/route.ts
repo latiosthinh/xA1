@@ -197,27 +197,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 4. Any raw text in admin group/chat without command prefix -> default to global broadcast
-    // If user just types a message in the group, deliver it globally
+    // 4. In Telegram groups or channels, ignore casual chit-chat unless explicitly starting with /
+    // This prevents every casual message in group from flooding site with broadcasts
     if (!rawText.startsWith("/")) {
-      const messageId = crypto.randomUUID();
-      await db.insert(orderMessages).values({
-        id: messageId,
-        orderId: null,
-        publicMemo: "GLOBAL",
-        sender: "ADMIN",
-        content: rawText,
-        status: "PENDING",
-        createdAt: new Date(),
-      });
-
-      if (bot && chatId) {
-        await bot.api.sendMessage(
-          chatId,
-          `📢 *Broadcast sent to site!*\n"${rawText}"`,
-          { parse_mode: "Markdown" }
-        );
-      }
       return NextResponse.json({ ok: true });
     }
 
