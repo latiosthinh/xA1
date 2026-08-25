@@ -93,16 +93,16 @@ export default function NotificationBell({
   return (
     <button
       onClick={handleClick}
-      className={`relative p-2 rounded-xl border transition active:scale-95 flex items-center justify-center ${
+      className={`relative p-2 border-2 transition active:translate-y-0.5 flex items-center justify-center shadow-pixel-sm ${
         hasUnread
-          ? "bg-amber-500/20 border-amber-500 text-amber-300 animate-pulse shadow-lg shadow-amber-500/20"
-          : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+          ? "bg-amber-500/20 border-amber-400 text-amber-300 animate-pulse"
+          : "bg-[#1a1e36] border-slate-600 text-slate-400 hover:text-white"
       }`}
       title={hasUnread ? "You have a message from admin!" : "Notifications"}
     >
       <Bell className={`w-4 h-4 ${hasUnread ? "animate-bounce text-amber-400" : ""}`} />
       {hasUnread && (
-        <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 border-2 border-slate-950 rounded-full" />
+        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 border border-black" />
       )}
     </button>
   );

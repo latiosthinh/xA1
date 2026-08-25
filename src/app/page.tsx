@@ -191,53 +191,51 @@ export default function StorefrontPage() {
         }
       />
 
-      {/* Hero Banner */}
-      <section className="relative overflow-hidden border-b border-slate-800/80 bg-gradient-to-b from-slate-900/80 to-slate-950 py-12 px-4 sm:px-8">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+      {/* Hero Banner with Pixel Aesthetic */}
+      <section className="relative overflow-hidden border-b-2 border-slate-800 bg-[#121524] py-10 px-4 sm:px-8">
+        <div className="max-w-4xl mx-auto text-center space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1a1e36] border border-emerald-500/40 text-emerald-400 font-pixel text-[10px]">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Fast Automated Bot Bridge</span>
+            <span>8-BIT DIGITAL OUTPOST</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-            Premium Digital Goods & Game Items
+          <h1 className="font-pixel text-xl sm:text-3xl text-white tracking-wider leading-relaxed drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+            xA1store Pixel Catalog
           </h1>
 
-          <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Select items, pay via MoMo or Binance QR with your Order ID memo, and receive your credentials directly in your browser.
+          <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+            Select game items, pay via MoMo or Binance QR with your Order Memo, and collect your delivery directly in your browser.
           </p>
 
           {/* Highlights */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 max-w-2xl mx-auto text-left">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 max-w-2xl mx-auto text-left">
+            <div className="bg-[#161a2e] border-2 border-slate-700 p-3 flex items-center gap-3 shadow-pixel-sm">
+              <div className="w-8 h-8 bg-emerald-500/20 text-emerald-400 border border-emerald-400 flex items-center justify-center shrink-0">
                 <Zap className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white">Instant Cart</h4>
-                <p className="text-[11px] text-slate-400">Zero account required</p>
+                <h4 className="font-pixel text-[9px] text-white">INSTANT CART</h4>
+                <p className="text-[11px] text-slate-400">Zero signup needed</p>
               </div>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-pink-600/20 text-pink-400 flex items-center justify-center shrink-0">
+            <div className="bg-[#161a2e] border-2 border-slate-700 p-3 flex items-center gap-3 shadow-pixel-sm">
+              <div className="w-8 h-8 bg-pink-500/20 text-pink-400 border border-pink-400 flex items-center justify-center shrink-0">
                 <RefreshCw className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white">MoMo & Binance</h4>
-                <p className="text-[11px] text-slate-400">1-click copy & QR pay</p>
+                <h4 className="font-pixel text-[9px] text-white">QR / PAY ID</h4>
+                <p className="text-[11px] text-slate-400">MoMo & Binance</p>
               </div>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="bg-[#161a2e] border-2 border-slate-700 p-3 flex items-center gap-3 shadow-pixel-sm">
+              <div className="w-8 h-8 bg-amber-500/20 text-amber-400 border border-amber-400 flex items-center justify-center shrink-0">
                 <Shield className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white">Telegram Alert</h4>
-                <p className="text-[11px] text-slate-400">Live admin response</p>
+                <h4 className="font-pixel text-[9px] text-white">BOT DELIVERY</h4>
+                <p className="text-[11px] text-slate-400">Live admin alert</p>
               </div>
             </div>
           </div>
@@ -245,30 +243,32 @@ export default function StorefrontPage() {
       </section>
 
       {/* Products Grid Section */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-10">
-        <div className="flex items-center justify-between mb-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-8">
+        <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-slate-800">
           <div>
-            <h2 className="text-xl font-extrabold text-white tracking-tight">Available Catalog</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Pick item quantity and add to cart</p>
+            <h2 className="font-pixel text-sm sm:text-base text-emerald-400 tracking-wider">
+              AVAILABLE INVENTORY
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">Pick quantities and add to your bag</p>
           </div>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400">
-            {products.length} Products
+          <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#1a1e36] border border-slate-700 text-slate-300">
+            ITEMS: {products.length}
           </span>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 bg-slate-900/50 border border-slate-800 rounded-2xl animate-pulse" />
+              <div key={i} className="h-44 bg-[#161a2e] border-2 border-slate-800 animate-pulse" />
             ))}
           </div>
         ) : products.length === 0 ? (
-          <div className="text-center py-20 bg-slate-900/30 border border-slate-800/80 rounded-3xl p-8">
-            <p className="text-sm font-semibold text-slate-400">No products available at the moment</p>
-            <p className="text-xs text-slate-500 mt-1">Please check back soon or visit the admin portal to add products.</p>
+          <div className="text-center py-16 bg-[#161a2e] border-2 border-slate-800 p-6">
+            <p className="font-pixel text-xs text-slate-400">NO ITEMS IN STOCK</p>
+            <p className="text-xs text-slate-500 mt-2">Visit admin panel to add inventory.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {products.map((product) => (
               <ProductCard
                 key={product.id}

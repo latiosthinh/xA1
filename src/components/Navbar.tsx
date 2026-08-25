@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingBag, Shield } from "lucide-react";
+import { ShoppingBag, Shield, Gamepad2 } from "lucide-react";
 import Link from "next/link";
 
 interface NavbarProps {
@@ -11,36 +11,34 @@ interface NavbarProps {
 
 export default function Navbar({ cartCount, onOpenCart, notificationBell }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-[#121524] border-b-2 border-slate-700/80 px-4 sm:px-8 py-3 flex items-center justify-between shadow-pixel">
       <div className="flex items-center gap-3">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition">
-            <ShoppingBag className="w-4 h-4" />
+        <Link href="/" className="flex items-center gap-2.5 group">
+          {/* Retro Pixel Logo */}
+          <div className="w-9 h-9 bg-emerald-500 border-2 border-emerald-300 flex items-center justify-center text-slate-950 shadow-pixel-sm group-hover:bg-emerald-400 transition">
+            <Gamepad2 className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-base tracking-tight text-white group-hover:text-indigo-400 transition">
-              MMO Store
-            </span>
-            <span className="hidden sm:inline text-[10px] text-slate-500 block -mt-1 font-medium">
-              Instant Telegram Delivery
+            <span className="font-pixel text-sm sm:text-base tracking-wider text-emerald-400 group-hover:text-emerald-300 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+              xA1store
             </span>
           </div>
         </Link>
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Notification Bell (Phase 3 slot) */}
+        {/* Notification Bell */}
         {notificationBell}
 
         {/* Cart Button */}
         <button
           onClick={onOpenCart}
-          className="relative flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-850 text-slate-200 transition active:scale-95 shadow-sm"
+          className="relative flex items-center gap-2 px-3 py-2 bg-[#1a1e36] border-2 border-slate-600 hover:border-emerald-400 text-slate-100 transition active:translate-y-0.5 shadow-pixel-sm font-pixel text-[11px]"
         >
-          <ShoppingBag className="w-4 h-4 text-indigo-400" />
-          <span className="text-xs font-semibold">Cart</span>
+          <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
+          <span>CART</span>
           {cartCount > 0 && (
-            <span className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold text-white bg-indigo-600 rounded-full min-w-[18px]">
+            <span className="inline-flex items-center justify-center px-1.5 py-0.2 text-[9px] font-bold text-slate-950 bg-emerald-400 border border-emerald-200 min-w-[16px]">
               {cartCount}
             </span>
           )}
@@ -49,7 +47,7 @@ export default function Navbar({ cartCount, onOpenCart, notificationBell }: Navb
         {/* Admin Link */}
         <Link
           href="/admin"
-          className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition"
+          className="p-2 bg-[#1a1e36] border-2 border-slate-600 hover:border-slate-400 text-slate-300 hover:text-white transition shadow-pixel-sm"
           title="Admin Panel"
         >
           <Shield className="w-4 h-4" />

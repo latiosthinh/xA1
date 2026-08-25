@@ -5,6 +5,7 @@ export const products = sqliteTable("products", {
   name: text("name").notNull(),
   description: text("description").default(""),
   price: real("price").notNull(),
+  stock: integer("stock").notNull().default(0),
   imageUrl: text("image_url").default(""),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
 });

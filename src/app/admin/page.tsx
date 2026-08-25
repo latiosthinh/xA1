@@ -21,6 +21,7 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  stock: number;
   imageUrl: string;
   createdAt: string;
 }
@@ -36,6 +37,7 @@ export default function AdminDashboardPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [stock, setStock] = useState("10");
   const [imageUrl, setImageUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -68,6 +70,7 @@ export default function AdminDashboardPage() {
     setName("");
     setDescription("");
     setPrice("");
+    setStock("10");
     setImageUrl("");
     setError("");
     setIsModalOpen(true);
@@ -78,6 +81,7 @@ export default function AdminDashboardPage() {
     setName(p.name);
     setDescription(p.description || "");
     setPrice(String(p.price));
+    setStock(String(p.stock ?? 0));
     setImageUrl(p.imageUrl || "");
     setError("");
     setIsModalOpen(true);
@@ -98,6 +102,7 @@ export default function AdminDashboardPage() {
         name: name.trim(),
         description: description.trim(),
         price: Number(price),
+        stock: isNaN(Number(stock)) ? 0 : Number(stock),
         imageUrl: imageUrl.trim(),
       };
 
@@ -265,7 +270,14 @@ export default function AdminDashboardPage() {
                 {/* Content */}
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold text-base text-white tracking-tight">{product.name}</h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-base text-white tracking-tight">{product.name}</h3>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                        (product.stock ?? 0) > 0 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                      }`}>
+                        Stock: {product.stock ?? 0}
+                      </span>
+                    </div>
                     <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                       {product.description || "No description provided."}
                     </p>
@@ -331,10 +343,10 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Price (USD / Points) *
+                    Price ($) *
                   </label>
                   <div className="relative">
                     <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -349,6 +361,22 @@ export default function AdminDashboardPage() {
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Stock Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value)}
+                    placeholder="10"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 placeholder:text-slate-600"
+                  />
                 </div>
 
                 <div>

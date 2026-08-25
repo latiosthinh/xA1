@@ -20,10 +20,18 @@ export async function initDb() {
       name TEXT NOT NULL,
       description TEXT DEFAULT '',
       price REAL NOT NULL,
+      stock INTEGER NOT NULL DEFAULT 0,
       image_url TEXT DEFAULT '',
       created_at INTEGER DEFAULT (unixepoch())
     );
   `);
+
+  // Migrate stock column if existing table lacks it
+  try {
+    await rawClient.execute(`ALTER TABLE products ADD COLUMN stock INTEGER NOT NULL DEFAULT 0;`);
+  } catch {
+    // Column already exists
+  }
 
   await rawClient.execute(`
     CREATE TABLE IF NOT EXISTS orders (
