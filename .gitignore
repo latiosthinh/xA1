@@ -1,0 +1,13 @@
+# .gitignore
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Database & Environment
+local.db
+local.db-journal
+*.local
+.env
+.env.production
