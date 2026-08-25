@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 export interface OrderMessageItem {
   id: string;
@@ -25,23 +26,22 @@ export default function NotificationBell({
   const [messages, setMessages] = useState<OrderMessageItem[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
 
+  const customerOrders = useStore((s) => s.customerOrders);
+  const acknowledgedMsgIds = useStore((s) => s.acknowledgedMsgIds);
+
   const pollOrders = async () => {
     try {
-      const storedOrdersRaw = localStorage.getItem("mmo_customer_orders");
-      const storedOrders = storedOrdersRaw ? JSON.parse(storedOrdersRaw) : [];
-      const acknowledgedIds = JSON.parse(localStorage.getItem("mmo_acknowledged_msg_ids") || "[]");
-
       const res = await fetch("/api/orders/poll", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          orders: Array.isArray(storedOrders)
-            ? storedOrders.map((o: { id: string; clientToken: string }) => ({
+          orders: Array.isArray(customerOrders)
+            ? customerOrders.map((o) => ({
                 id: o.id,
                 clientToken: o.clientToken,
               }))
             : [],
-          acknowledgedIds,
+          acknowledgedIds: acknowledgedMsgIds,
         }),
       });
 
@@ -68,20 +68,16 @@ export default function NotificationBell({
   };
 
   useEffect(() => {
-    // Initial check
     pollOrders();
-
-    // Short poll interval every 4 seconds
     const interval = setInterval(pollOrders, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [customerOrders, acknowledgedMsgIds]);
 
   const handleClick = () => {
     if (messages.length > 0) {
-      const storedOrders = JSON.parse(localStorage.getItem("mmo_customer_orders") || "[]");
       const latest = messages[0];
       const match = latest.orderId
-        ? storedOrders.find((o: { id: string }) => o.id === latest.orderId)
+        ? customerOrders.find((o) => o.id === latest.orderId)
         : null;
 
       onOpenModal(latest, match ? match.clientToken : null);
@@ -107,4 +103,5 @@ export default function NotificationBell({
     </button>
   );
 }
+
 
