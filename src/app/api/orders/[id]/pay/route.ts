@@ -3,6 +3,7 @@ import { db, initDb } from "@/lib/db";
 import { orders } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 import { sendTelegramOrderAlert } from "@/lib/telegram";
+import { sendOrderEmailNotification } from "@/lib/email";
 
 export async function POST(
   request: Request,
@@ -32,6 +33,9 @@ export async function POST(
     // Dispatch Telegram bot alert to admin
     await sendTelegramOrderAlert(order);
 
+    // Dispatch Email notification to admin (using ADMIN_NOTIFY_EMAIL or ADMIN_EMAIL)
+    await sendOrderEmailNotification(order);
+
     return NextResponse.json({
       success: true,
       message: "Order updated to paid pending confirmation",
@@ -43,3 +47,4 @@ export async function POST(
     return NextResponse.json({ error: "Failed to update payment status" }, { status: 500 });
   }
 }
+
