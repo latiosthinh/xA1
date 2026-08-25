@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --font-pixel: var(--font-pixel), monospace;
+  --font-sans: var(--font-body), sans-serif;
+  --shadow-pixel: 3px 3px 0px 0px rgba(0, 0, 0, 0.8);
+  --shadow-pixel-sm: 2px 2px 0px 0px rgba(0, 0, 0, 0.8);
+  --shadow-pixel-lg: 4px 4px 0px 0px rgba(0, 0, 0, 0.9);
+}
 
 :root {
   --background: #0d0f18;
@@ -11,7 +17,6 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-body), system-ui, sans-serif;
-  image-rendering: pixelated;
 }
 
 /* Retro pixel scrollbar */
