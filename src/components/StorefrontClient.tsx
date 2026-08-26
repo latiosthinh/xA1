@@ -103,6 +103,9 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
 
   const totalCartCount = hasHydrated ? cart.reduce((sum, item) => sum + item.quantity, 0) : 0;
 
+  const inStockProducts = initialProducts.filter((p) => (p.stock ?? 0) > 0);
+  const outOfStockProducts = initialProducts.filter((p) => (p.stock ?? 0) <= 0);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
       {/* Navbar with Notification Bell */}
@@ -173,33 +176,63 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
       </section>
 
       {/* Products Grid Section - Server Pre-Rendered */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-8">
-        <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-slate-800">
-          <div>
-            <h2 className="font-pixel text-sm sm:text-base text-emerald-400 tracking-wider">
-              AVAILABLE INVENTORY
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">Pick quantities and add to your bag</p>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-8 space-y-10">
+        {/* In-Stock Section */}
+        <div>
+          <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-slate-800">
+            <div>
+              <h2 className="font-pixel text-sm sm:text-base text-emerald-400 tracking-wider">
+                AVAILABLE INVENTORY
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">Pick quantities and add to your bag</p>
+            </div>
+            <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#1a1e36] border border-emerald-500/30 text-emerald-400">
+              IN STOCK: {inStockProducts.length}
+            </span>
           </div>
-          <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#1a1e36] border border-slate-700 text-slate-300">
-            ITEMS: {initialProducts.length}
-          </span>
+
+          {inStockProducts.length === 0 ? (
+            <div className="text-center py-12 bg-[#161a2e] border-2 border-slate-800 p-6">
+              <p className="font-pixel text-xs text-slate-400">NO ITEMS CURRENTLY IN STOCK</p>
+              <p className="text-xs text-slate-500 mt-2">Check back soon or see below for incoming catalog items.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {inStockProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={addToCart}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {initialProducts.length === 0 ? (
-          <div className="text-center py-16 bg-[#161a2e] border-2 border-slate-800 p-6">
-            <p className="font-pixel text-xs text-slate-400">NO ITEMS IN STOCK</p>
-            <p className="text-xs text-slate-500 mt-2">Visit admin panel to add inventory.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {initialProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-              />
-            ))}
+        {/* Out-Of-Stock / Not-Available Section */}
+        {outOfStockProducts.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-slate-800">
+              <div>
+                <h2 className="font-pixel text-sm sm:text-base text-rose-400 tracking-wider">
+                  NOT AVAILABLE (OUT OF STOCK)
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">These items are temporarily out of stock</p>
+              </div>
+              <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#1a1e36] border border-rose-500/30 text-rose-400">
+                OUT OF STOCK: {outOfStockProducts.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {outOfStockProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={addToCart}
+                />
+              ))}
+            </div>
           </div>
         )}
       </main>
