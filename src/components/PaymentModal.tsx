@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   X, 
   Copy, 
@@ -8,7 +8,7 @@ import {
   AlertTriangle, 
   Clock, 
   Wallet, 
-  CreditCard,
+  CreditCard, 
   ShieldCheck,
   Sparkles
 } from "lucide-react";
@@ -41,6 +41,24 @@ export default function PaymentModal({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isDoneSubmitting, setIsDoneSubmitting] = useState(false);
   const [isCompletedView, setIsCompletedView] = useState(false);
+  const [autoCloseCountdown, setAutoCloseCountdown] = useState<number | null>(null);
+  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync tab with order payment method if specified
+  useEffect(() => {
+    if (order?.paymentMethod) {
+      setSelectedTab(order.paymentMethod);
+    }
+  }, [order]);
+
+  // Clean up timers on unmount or close
+  useEffect(() => {
+    return () => {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+    };
+  }, []);
 
   if (!isOpen || !order) return null;
 
@@ -71,6 +89,22 @@ export default function PaymentModal({
     try {
       await onPaymentDone(order.id);
       setIsCompletedView(true);
+
+      // Start 5s countdown auto-close
+      setAutoCloseCountdown(5);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+
+      countdownIntervalRef.current = setInterval(() => {
+        setAutoCloseCountdown((prev) => (prev && prev > 1 ? prev - 1 : 0));
+      }, 1000);
+
+      autoCloseTimerRef.current = setTimeout(() => {
+        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+        setIsCompletedView(false);
+        setAutoCloseCountdown(null);
+        onClose();
+      }, 5000);
     } catch {
       alert("Failed to submit payment confirmation. Please try again.");
     } finally {
@@ -79,13 +113,22 @@ export default function PaymentModal({
   };
 
   const handleCloseAndFinish = () => {
+    if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
     setIsCompletedView(false);
+    setAutoCloseCountdown(null);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-[#121524] border-2 border-slate-700 p-6 shadow-2xl relative my-8 shadow-pixel-lg">
+    <div 
+      onClick={handleCloseAndFinish}
+      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-[#121524] border-2 border-slate-700 p-6 shadow-2xl relative my-8 shadow-pixel-lg"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b-2 border-slate-700 bg-[#0e111f] -mx-6 -mt-6 p-4 mb-4">
           <div className="flex items-center gap-2.5">
@@ -98,7 +141,7 @@ export default function PaymentModal({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseAndFinish}
             className="p-1 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 transition"
           >
             <X className="w-4 h-4" />
@@ -128,12 +171,15 @@ export default function PaymentModal({
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
+              <p className="font-pixel text-[9px] text-slate-400">
+                AUTO CLOSING IN {autoCloseCountdown ?? 5}S...
+              </p>
               <button
                 onClick={handleCloseAndFinish}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-pixel text-xs py-3 px-4 border-2 border-emerald-300 shadow-pixel-sm active:translate-y-0.5 transition"
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-pixel text-xs py-3 px-4 border-2 border-emerald-300 shadow-pixel-sm active:translate-y-0.5 transition font-bold"
               >
-                RETURN TO STORE
+                RETURN TO STORE NOW
               </button>
             </div>
           </div>
@@ -249,7 +295,7 @@ export default function PaymentModal({
             <button
               onClick={handleDoneClick}
               disabled={isDoneSubmitting}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-pixel text-xs py-3 px-4 border-2 border-emerald-300 shadow-pixel-sm active:translate-y-0.5 transition disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-pixel text-xs py-3 px-4 border-2 border-emerald-300 shadow-pixel-sm active:translate-y-0.5 transition disabled:opacity-50 font-bold"
             >
               <Check className="w-4 h-4" />
               <span>{isDoneSubmitting ? "SENDING NOTICE..." : "I HAVE PAID / DONE"}</span>

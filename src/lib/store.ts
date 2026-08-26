@@ -16,6 +16,10 @@ export interface StoredCustomerOrder {
   id: string;
   publicMemo: string;
   clientToken: string;
+  totalAmount?: number;
+  paymentMethod?: "momo" | "binance";
+  items?: { id: string; name: string; price: number; quantity: number }[];
+  status?: string;
   createdAt: string;
   lastNoticedAt?: number; // timestamp in ms
 }
@@ -50,6 +54,7 @@ interface StoreState {
   acknowledgedMsgIds: string[];
   addCustomerOrder: (order: StoredCustomerOrder) => void;
   updateOrderLastNoticed: (orderId: string, timestamp: number) => void;
+  updateOrderStatus: (orderId: string, status: string) => void;
   markMessageSeen: (msgId: string) => void;
   acknowledgeMessageId: (msgId: string) => void;
 }
@@ -134,13 +139,24 @@ export const useStore = create<StoreState>()(
       seenMsgIds: [],
       acknowledgedMsgIds: [],
       addCustomerOrder: (order) =>
-        set((state) => ({
-          customerOrders: [...state.customerOrders, order],
-        })),
+        set((state) => {
+          const exists = state.customerOrders.some((o) => o.id === order.id);
+          return {
+            customerOrders: exists
+              ? state.customerOrders.map((o) => (o.id === order.id ? { ...o, ...order } : o))
+              : [...state.customerOrders, order],
+          };
+        }),
       updateOrderLastNoticed: (orderId, timestamp) =>
         set((state) => ({
           customerOrders: state.customerOrders.map((o) =>
             o.id === orderId ? { ...o, lastNoticedAt: timestamp } : o
+          ),
+        })),
+      updateOrderStatus: (orderId, status) =>
+        set((state) => ({
+          customerOrders: state.customerOrders.map((o) =>
+            o.id === orderId ? { ...o, status } : o
           ),
         })),
       markMessageSeen: (msgId) =>

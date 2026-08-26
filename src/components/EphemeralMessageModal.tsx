@@ -145,8 +145,14 @@ export default function EphemeralMessageModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className={`w-full max-w-lg bg-[#121524] border-2 ${borderColor} p-6 shadow-2xl relative my-8 shadow-pixel-lg`}>
+    <div 
+      onClick={handleConfirmClose}
+      className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className={`w-full max-w-lg bg-[#121524] border-2 ${borderColor} p-6 shadow-2xl relative my-8 shadow-pixel-lg`}
+      >
         {/* Header */}
         <div className="flex items-start gap-3.5 pb-4 border-b-2 border-slate-700 bg-[#0e111f] -mx-6 -mt-6 p-4 mb-4">
           <div className={`w-9 h-9 ${headerBg} border flex items-center justify-center shrink-0`}>

@@ -7,6 +7,7 @@ import CartDrawer from "@/components/CartDrawer";
 import PaymentModal, { OrderDetails } from "@/components/PaymentModal";
 import NotificationBell, { OrderMessageItem } from "@/components/NotificationBell";
 import EphemeralMessageModal from "@/components/EphemeralMessageModal";
+import FloatingOrderManager from "@/components/FloatingOrderManager";
 import { Product } from "@/lib/schema";
 import { Sparkles, Shield, Zap, RefreshCw } from "lucide-react";
 import { useStore } from "@/lib/store";
@@ -71,6 +72,10 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
         id: createdOrder.id,
         publicMemo: createdOrder.publicMemo,
         clientToken: createdOrder.clientToken,
+        totalAmount: createdOrder.totalAmount,
+        paymentMethod: createdOrder.paymentMethod,
+        items: createdOrder.items,
+        status: createdOrder.status || "PENDING",
         createdAt: new Date().toISOString(),
       });
     } catch (err: unknown) {
@@ -262,6 +267,9 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
         clientToken={activeClientToken}
         onDismiss={handleDismissMessage}
       />
+
+      {/* Bottom-right Floating Order Manager */}
+      <FloatingOrderManager onReopenPayment={openPaymentModal} />
     </div>
   );
 }
