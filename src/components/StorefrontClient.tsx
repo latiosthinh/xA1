@@ -128,6 +128,11 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
             xA1store Pixel Catalog
           </h1>
 
+          <div className="inline-block max-w-xl mx-auto p-3 bg-amber-950/40 border-2 border-amber-500/60 text-amber-200 text-xs sm:text-sm leading-relaxed shadow-pixel-sm">
+            <span className="font-pixel text-[10px] sm:text-xs text-amber-400 block mb-1">MAINTENANCE NOTICE</span>
+            store.xa1.space temporary under maintenance, some products might be unavailable currently, we&apos;ll get back as soon as possible
+          </div>
+
           <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
             Select game items, pay via MoMo or Binance with your Order Memo, and collect your delivery directly in your browser.
           </p>
