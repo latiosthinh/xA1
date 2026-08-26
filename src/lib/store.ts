@@ -44,11 +44,13 @@ interface StoreState {
   openMessageModal: (message: OrderMessageItem, token: string | null) => void;
   closeMessageModal: () => void;
 
-  // Customer Stored Orders & Acknowledged message IDs
+  // Customer Stored Orders, Seen Message IDs & Acknowledged message IDs
   customerOrders: StoredCustomerOrder[];
+  seenMsgIds: string[];
   acknowledgedMsgIds: string[];
   addCustomerOrder: (order: StoredCustomerOrder) => void;
   updateOrderLastNoticed: (orderId: string, timestamp: number) => void;
+  markMessageSeen: (msgId: string) => void;
   acknowledgeMessageId: (msgId: string) => void;
 }
 
@@ -112,11 +114,14 @@ export const useStore = create<StoreState>()(
       activeClientToken: null,
       isMessageModalOpen: false,
       openMessageModal: (message, token) =>
-        set({
+        set((state) => ({
           selectedMessage: message,
           activeClientToken: token,
           isMessageModalOpen: true,
-        }),
+          seenMsgIds: state.seenMsgIds.includes(message.id)
+            ? state.seenMsgIds
+            : [...state.seenMsgIds, message.id],
+        })),
       closeMessageModal: () =>
         set({
           isMessageModalOpen: false,
@@ -126,6 +131,7 @@ export const useStore = create<StoreState>()(
 
       // Customer storage
       customerOrders: [],
+      seenMsgIds: [],
       acknowledgedMsgIds: [],
       addCustomerOrder: (order) =>
         set((state) => ({
@@ -137,8 +143,17 @@ export const useStore = create<StoreState>()(
             o.id === orderId ? { ...o, lastNoticedAt: timestamp } : o
           ),
         })),
+      markMessageSeen: (msgId) =>
+        set((state) => ({
+          seenMsgIds: state.seenMsgIds.includes(msgId)
+            ? state.seenMsgIds
+            : [...state.seenMsgIds, msgId],
+        })),
       acknowledgeMessageId: (msgId) =>
         set((state) => ({
+          seenMsgIds: state.seenMsgIds.includes(msgId)
+            ? state.seenMsgIds
+            : [...state.seenMsgIds, msgId],
           acknowledgedMsgIds: state.acknowledgedMsgIds.includes(msgId)
             ? state.acknowledgedMsgIds
             : [...state.acknowledgedMsgIds, msgId],
@@ -149,8 +164,10 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         cart: state.cart,
         customerOrders: state.customerOrders,
+        seenMsgIds: state.seenMsgIds,
         acknowledgedMsgIds: state.acknowledgedMsgIds,
       }),
     }
   )
 );
+

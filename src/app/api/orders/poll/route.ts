@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
 import { orders, orderMessages } from "@/lib/schema";
-import { eq, and, ne, isNull, or } from "drizzle-orm";
+import { eq, and, ne, isNull, or, gt } from "drizzle-orm";
 
 interface OrderTokenPair {
   id: string;
@@ -17,6 +17,9 @@ export async function POST(request: Request) {
 
     const unreadMessages = [];
 
+    // Only consider recent messages created in the last 24 hours to avoid historic stale messages
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
     // 1. Fetch Global Broadcasts (orderId is null or publicMemo is 'GLOBAL')
     const globalMsgs = await db
       .select()
@@ -24,7 +27,8 @@ export async function POST(request: Request) {
       .where(
         and(
           or(isNull(orderMessages.orderId), eq(orderMessages.publicMemo, "GLOBAL")),
-          ne(orderMessages.status, "ACKNOWLEDGED")
+          ne(orderMessages.status, "ACKNOWLEDGED"),
+          gt(orderMessages.createdAt, oneDayAgo)
         )
       );
 
@@ -82,4 +86,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to poll messages" }, { status: 500 });
   }
 }
+
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useStore } from "@/lib/store";
 
@@ -25,12 +25,16 @@ export default function NotificationBell({
 }: NotificationBellProps) {
   const [messages, setMessages] = useState<OrderMessageItem[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
-  const promptedMsgIdsRef = useRef<Set<string>>(new Set());
 
   const customerOrders = useStore((s) => s.customerOrders);
+  const seenMsgIds = useStore((s) => s.seenMsgIds);
   const acknowledgedMsgIds = useStore((s) => s.acknowledgedMsgIds);
+  const markMessageSeen = useStore((s) => s.markMessageSeen);
 
   const pollOrders = async () => {
+    // If browser tab is inactive / in background, skip polling
+    if (typeof document !== "undefined" && document.hidden) return;
+
     try {
       const res = await fetch("/api/orders/poll", {
         method: "POST",
@@ -56,9 +60,10 @@ export default function NotificationBell({
         setHasUnread(true);
 
         const latest = newMsgs[0];
-        // Only auto popup ONCE per message ID unless clicked manually
-        if (!promptedMsgIdsRef.current.has(latest.id)) {
-          promptedMsgIdsRef.current.add(latest.id);
+        // ONLY trigger modal popup if message has NEVER been seen in localStorage
+        const isAlreadySeen = seenMsgIds.includes(latest.id);
+        if (!isAlreadySeen) {
+          markMessageSeen(latest.id);
           if (onNewMessageReceived) {
             onNewMessageReceived(latest);
           }
@@ -74,9 +79,10 @@ export default function NotificationBell({
 
   useEffect(() => {
     pollOrders();
-    const interval = setInterval(pollOrders, 4000);
+    // 10s interval when user is actively on site, auto pauses when tab hidden
+    const interval = setInterval(pollOrders, 10000);
     return () => clearInterval(interval);
-  }, [customerOrders, acknowledgedMsgIds]);
+  }, [customerOrders.length, acknowledgedMsgIds.length, seenMsgIds.length]);
 
   const handleClick = () => {
     if (messages.length > 0) {
@@ -108,6 +114,7 @@ export default function NotificationBell({
     </button>
   );
 }
+
 
 
 
