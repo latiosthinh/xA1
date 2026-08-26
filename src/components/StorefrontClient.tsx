@@ -142,7 +142,7 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
           </div>
 
           <p className="text-xs sm:text-sm text-[#d4c5b3] max-w-lg mx-auto leading-relaxed">
-            Select game items, pay via MoMo or Binance with your Order Memo, and collect your delivery directly in your browser.
+            Support online: 18:00 - 24:00 (UTC+7) - email: clementlynch62738993@gmail.com
           </p>
 
           {/* Highlights */}

@@ -53,6 +53,7 @@ interface StoreState {
   seenMsgIds: string[];
   acknowledgedMsgIds: string[];
   addCustomerOrder: (order: StoredCustomerOrder) => void;
+  removeCustomerOrder: (orderId: string) => void;
   updateOrderLastNoticed: (orderId: string, timestamp: number) => void;
   updateOrderStatus: (orderId: string, status: string) => void;
   markMessageSeen: (msgId: string) => void;
@@ -147,6 +148,10 @@ export const useStore = create<StoreState>()(
               : [...state.customerOrders, order],
           };
         }),
+      removeCustomerOrder: (orderId) =>
+        set((state) => ({
+          customerOrders: state.customerOrders.filter((o) => o.id !== orderId),
+        })),
       updateOrderLastNoticed: (orderId, timestamp) =>
         set((state) => ({
           customerOrders: state.customerOrders.map((o) =>

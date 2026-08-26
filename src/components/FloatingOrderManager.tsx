@@ -6,9 +6,8 @@ import {
   X, 
   Bell, 
   CheckCircle2, 
-  ExternalLink, 
-  Clock, 
-  ShieldAlert,
+  Trash2,
+  Check,
   Send,
   Sparkles
 } from "lucide-react";
@@ -27,6 +26,7 @@ export default function FloatingOrderManager({ onReopenPayment }: FloatingOrderM
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const customerOrders = useStore((s) => s.customerOrders);
+  const removeCustomerOrder = useStore((s) => s.removeCustomerOrder);
   const updateOrderLastNoticed = useStore((s) => s.updateOrderLastNoticed);
 
   // Close on outside click
@@ -155,11 +155,26 @@ export default function FloatingOrderManager({ onReopenPayment }: FloatingOrderM
                       </span>
                     </div>
 
-                    {ord.totalAmount ? (
-                      <span className="font-pixel text-[10px] text-[#f4eee0]">
-                        {formatDualPrice(ord.totalAmount)}
-                      </span>
-                    ) : null}
+                    <div className="flex items-center gap-2">
+                      {ord.totalAmount ? (
+                        <span className="font-pixel text-[10px] text-[#f4eee0]">
+                          {formatDualPrice(ord.totalAmount)}
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Remove/Complete order ${ord.publicMemo}?`)) {
+                            removeCustomerOrder(ord.id);
+                          }
+                        }}
+                        className="p-1 text-[#8c7e6e] hover:text-[#ef4444] hover:bg-[#332b20] border border-[#443a2f] transition"
+                        title="Dismiss / Complete this order"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
 
                   {ord.items && ord.items.length > 0 && (
@@ -197,6 +212,19 @@ export default function FloatingOrderManager({ onReopenPayment }: FloatingOrderM
                     >
                       <Bell className="w-3 h-3 text-[#fbbf24]" />
                       <span>{noticingOrderId === ord.id ? "ALERTING..." : "NOTICE"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeCustomerOrder(ord.id);
+                      }}
+                      className="flex items-center justify-center gap-1 font-pixel text-[9px] bg-[#1c1914] hover:bg-emerald-950/60 text-emerald-400 border border-emerald-500/50 hover:border-emerald-400 py-1.5 px-2 transition shadow-pixel-sm"
+                      title="Mark as completed & remove"
+                    >
+                      <Check className="w-3 h-3" />
+                      <span>DONE</span>
                     </button>
                   </div>
                 </div>
