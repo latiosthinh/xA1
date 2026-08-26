@@ -16,25 +16,26 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0d0f18",
-          border: "2px solid #10b981",
+          background: "#14120e",
+          border: "2px solid #d97706",
         }}
       >
         <div
           style={{
-            width: 18,
-            height: 18,
-            backgroundColor: "#10b981",
+            width: 20,
+            height: 20,
+            backgroundColor: "#d97706",
+            border: "1px solid #f59e0b",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "#0d0f18",
+            color: "#14120e",
             fontSize: 12,
-            fontWeight: "bold",
+            fontWeight: "900",
             fontFamily: "monospace",
           }}
         >
-          A
+          xA1
         </div>
       </div>
     ),
