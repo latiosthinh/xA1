@@ -14,8 +14,8 @@ const bodyFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "xA1store - 8-Bit Pixel Digital Goods",
-  description: "Retro pixel aesthetic store with Telegram bot bridge and instant delivery",
+  title: "xA1store - Digital Goods",
+  description: "Editorial vintage store with Telegram bot bridge and instant delivery",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${pixelFont.variable} ${bodyFont.variable}`}>
-      <body className="min-h-screen bg-[#0d0f18] text-slate-100 antialiased font-sans selection:bg-emerald-500 selection:text-black">
+      <body className="min-h-screen bg-[#14120e] text-[#f4eee0] antialiased font-sans selection:bg-[#d97706] selection:text-white">
         {children}
       </body>
     </html>

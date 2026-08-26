@@ -3,14 +3,14 @@
 @theme {
   --font-pixel: var(--font-pixel), monospace;
   --font-sans: var(--font-body), sans-serif;
-  --shadow-pixel: 3px 3px 0px 0px rgba(0, 0, 0, 0.8);
-  --shadow-pixel-sm: 2px 2px 0px 0px rgba(0, 0, 0, 0.8);
-  --shadow-pixel-lg: 4px 4px 0px 0px rgba(0, 0, 0, 0.9);
+  --shadow-pixel: 3px 3px 0px 0px rgba(0, 0, 0, 0.7);
+  --shadow-pixel-sm: 2px 2px 0px 0px rgba(0, 0, 0, 0.7);
+  --shadow-pixel-lg: 4px 4px 0px 0px rgba(0, 0, 0, 0.85);
 }
 
 :root {
-  --background: #0d0f18;
-  --foreground: #f8fafc;
+  --background: #14120e;
+  --foreground: #f4eee0;
 }
 
 body {
@@ -19,20 +19,20 @@ body {
   font-family: var(--font-body), system-ui, sans-serif;
 }
 
-/* Retro pixel scrollbar */
+/* Claude vintage scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d0f18;
+  background: #14120e;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1a1e36;
-  border: 1px solid #334155;
+  background: #2b251d;
+  border: 1px solid #443a2f;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #10b981;
+  background: #d97706;
 }
 
 .pixelated {

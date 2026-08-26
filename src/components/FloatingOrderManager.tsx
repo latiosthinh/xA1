@@ -106,30 +106,30 @@ export default function FloatingOrderManager({ onReopenPayment }: FloatingOrderM
       {/* Floating Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3.5 py-2.5 bg-[#121524] border-2 border-emerald-500/80 hover:border-emerald-400 text-emerald-400 font-pixel text-[10px] shadow-pixel-lg hover:bg-[#1a1e36] active:translate-y-0.5 transition"
+        className="flex items-center gap-2 px-3.5 py-2.5 bg-[#1c1914] border-2 border-[#d97706] hover:border-[#f59e0b] text-[#fbbf24] font-pixel text-[10px] shadow-pixel-lg hover:bg-[#241f18] active:translate-y-0.5 transition"
         title="View your pending orders"
       >
-        <ReceiptText className="w-4 h-4 text-emerald-400" />
+        <ReceiptText className="w-4 h-4 text-[#fbbf24]" />
         <span className="font-bold">MY ORDERS ({customerOrders.length})</span>
       </button>
 
       {/* Floating Popup List */}
       {isOpen && (
-        <div className="absolute bottom-12 right-0 w-80 sm:w-96 bg-[#121524] border-2 border-slate-700 shadow-2xl p-4 shadow-pixel-lg animate-in fade-in zoom-in-95">
-          <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-slate-700">
+        <div className="absolute bottom-12 right-0 w-80 sm:w-96 bg-[#1c1914] border-2 border-[#443a2f] shadow-2xl p-4 shadow-pixel-lg animate-in fade-in zoom-in-95">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-[#332b20]">
             <div className="flex items-center gap-2">
-              <ReceiptText className="w-4 h-4 text-emerald-400" />
-              <h3 className="font-pixel text-xs text-white">ACTIVE ORDERS</h3>
+              <ReceiptText className="w-4 h-4 text-[#fbbf24]" />
+              <h3 className="font-pixel text-xs text-[#f4eee0]">ACTIVE ORDERS</h3>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 text-slate-400 hover:text-white transition"
+              className="p-1 text-[#8c7e6e] hover:text-white transition"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+          <p className="text-[11px] text-[#b8a896] mb-3 leading-relaxed">
             Click any order to view payment guide or alert admin via the bell button.
           </p>
 
@@ -143,46 +143,46 @@ export default function FloatingOrderManager({ onReopenPayment }: FloatingOrderM
                 <div
                   key={ord.id}
                   onClick={() => handleOpenPayment(ord)}
-                  className="bg-[#161a2e] border-2 border-slate-700 hover:border-emerald-400/80 p-3 cursor-pointer transition flex flex-col gap-2 shadow-pixel-sm group"
+                  className="bg-[#241f18] border-2 border-[#3d3326] hover:border-[#d97706]/80 p-3 cursor-pointer transition flex flex-col gap-2 shadow-pixel-sm group"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <span className="font-pixel text-[10px] text-emerald-400 font-bold block">
+                      <span className="font-pixel text-[10px] text-[#fbbf24] font-bold block">
                         {ord.publicMemo}
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-[#8c7e6e]">
                         {new Date(ord.createdAt).toLocaleDateString()}
                       </span>
                     </div>
 
                     {ord.totalAmount ? (
-                      <span className="font-pixel text-[10px] text-white">
+                      <span className="font-pixel text-[10px] text-[#f4eee0]">
                         {formatDualPrice(ord.totalAmount)}
                       </span>
                     ) : null}
                   </div>
 
                   {ord.items && ord.items.length > 0 && (
-                    <div className="text-[10px] text-slate-300 truncate">
+                    <div className="text-[10px] text-[#b8a896] truncate">
                       {ord.items.map((i) => `${i.name} x${i.quantity}`).join(", ")}
                     </div>
                   )}
 
                   {noticeMessage?.id === ord.id && (
-                    <div className="text-[10px] text-emerald-400 font-pixel">
+                    <div className="text-[10px] text-[#fbbf24] font-pixel">
                       ✓ {noticeMessage.text}
                     </div>
                   )}
 
                   {/* Actions inside order item */}
-                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-[#332b20] flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleOpenPayment(ord);
                       }}
-                      className="flex-1 flex items-center justify-center gap-1 font-pixel text-[9px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-1.5 px-2 border border-emerald-300 shadow-pixel-sm active:translate-y-0.5 transition"
+                      className="flex-1 flex items-center justify-center gap-1 font-pixel text-[9px] bg-[#d97706] hover:bg-[#b45309] text-[#14120e] font-bold py-1.5 px-2 border border-[#f59e0b] shadow-pixel-sm active:translate-y-0.5 transition"
                     >
                       <CheckCircle2 className="w-3 h-3" />
                       <span>PAYMENT GUIDE</span>
@@ -192,10 +192,10 @@ export default function FloatingOrderManager({ onReopenPayment }: FloatingOrderM
                       type="button"
                       onClick={(e) => handleNoticeAdmin(ord, e)}
                       disabled={noticingOrderId === ord.id || !canNotice}
-                      className="flex items-center justify-center gap-1 font-pixel text-[9px] bg-[#1a1e36] hover:bg-[#252b4d] text-amber-300 border border-amber-500/50 hover:border-amber-400 py-1.5 px-2.5 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-pixel-sm"
+                      className="flex items-center justify-center gap-1 font-pixel text-[9px] bg-[#2a1c0d] hover:bg-[#3d2913] text-[#fbbf24] border border-[#d97706]/50 hover:border-[#fbbf24] py-1.5 px-2.5 transition disabled:opacity-40 disabled:cursor-not-allowed shadow-pixel-sm"
                       title={canNotice ? "Alert admin on Telegram" : "Rate limit 10 minutes"}
                     >
-                      <Bell className="w-3 h-3 text-amber-400" />
+                      <Bell className="w-3 h-3 text-[#fbbf24]" />
                       <span>{noticingOrderId === ord.id ? "ALERTING..." : "NOTICE"}</span>
                     </button>
                   </div>

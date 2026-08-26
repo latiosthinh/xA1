@@ -112,7 +112,7 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
   const outOfStockProducts = initialProducts.filter((p) => (p.stock ?? 0) <= 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#14120e] text-[#f4eee0] flex flex-col selection:bg-[#d97706] selection:text-white">
       {/* Navbar with Notification Bell */}
       <Navbar
         cartCount={totalCartCount}
@@ -124,56 +124,56 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
         }
       />
 
-      {/* Hero Banner with Pixel Aesthetic */}
-      <section className="relative overflow-hidden border-b-2 border-slate-800 bg-[#121524] py-10 px-4 sm:px-8">
+      {/* Hero Banner with Claude Editorial Vintage Aesthetic */}
+      <section className="relative overflow-hidden border-b-2 border-[#3d3326] bg-[#1c1914] py-10 px-4 sm:px-8">
         <div className="max-w-4xl mx-auto text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1a1e36] border border-emerald-500/40 text-emerald-400 font-pixel text-[10px]">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>8-BIT DIGITAL OUTPOST</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#262018] border border-[#d97706]/50 text-[#fbbf24] font-pixel text-[10px]">
+            <Sparkles className="w-3.5 h-3.5 text-[#fbbf24]" />
+            <span>EDITORIAL DIGITAL OUTPOST</span>
           </div>
 
-          <h1 className="font-pixel text-xl sm:text-3xl text-white tracking-wider leading-relaxed drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
-            xA1store Pixel Catalog
+          <h1 className="font-pixel text-xl sm:text-3xl text-[#f4eee0] tracking-wider leading-relaxed drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)]">
+            xA1store Catalog
           </h1>
 
-          <div className="inline-block max-w-xl mx-auto p-3 bg-amber-950/40 border-2 border-amber-500/60 text-amber-200 text-xs sm:text-sm leading-relaxed shadow-pixel-sm">
-            <span className="font-pixel text-[10px] sm:text-xs text-amber-400 block mb-1">MAINTENANCE NOTICE</span>
+          <div className="inline-block max-w-xl mx-auto p-3 bg-[#2a1c0d] border-2 border-[#d97706]/70 text-[#fef3c7] text-xs sm:text-sm leading-relaxed shadow-pixel-sm">
+            <span className="font-pixel text-[10px] sm:text-xs text-[#fbbf24] block mb-1">MAINTENANCE NOTICE</span>
             store.xa1.space temporary under maintenance, some products might be unavailable currently, we&apos;ll get back as soon as possible
           </div>
 
-          <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#d4c5b3] max-w-lg mx-auto leading-relaxed">
             Select game items, pay via MoMo or Binance with your Order Memo, and collect your delivery directly in your browser.
           </p>
 
           {/* Highlights */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 max-w-2xl mx-auto text-left">
-            <div className="bg-[#161a2e] border-2 border-slate-700 p-3 flex items-center gap-3 shadow-pixel-sm">
-              <div className="w-8 h-8 bg-emerald-500/20 text-emerald-400 border border-emerald-400 flex items-center justify-center shrink-0">
+            <div className="bg-[#241f18] border-2 border-[#443a2f] p-3 flex items-center gap-3 shadow-pixel-sm">
+              <div className="w-8 h-8 bg-[#d97706]/20 text-[#fbbf24] border border-[#d97706] flex items-center justify-center shrink-0">
                 <Zap className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-pixel text-[9px] text-white">INSTANT CART</h4>
-                <p className="text-[11px] text-slate-400">Zero signup needed</p>
+                <h4 className="font-pixel text-[9px] text-[#f4eee0]">INSTANT CART</h4>
+                <p className="text-[11px] text-[#b8a896]">Zero signup needed</p>
               </div>
             </div>
 
-            <div className="bg-[#161a2e] border-2 border-slate-700 p-3 flex items-center gap-3 shadow-pixel-sm">
-              <div className="w-8 h-8 bg-pink-500/20 text-pink-400 border border-pink-400 flex items-center justify-center shrink-0">
+            <div className="bg-[#241f18] border-2 border-[#443a2f] p-3 flex items-center gap-3 shadow-pixel-sm">
+              <div className="w-8 h-8 bg-[#c026d3]/20 text-[#f0abfc] border border-[#c026d3] flex items-center justify-center shrink-0">
                 <RefreshCw className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-pixel text-[9px] text-white">MOMO / BINANCE</h4>
-                <p className="text-[11px] text-slate-400">Direct transfer memo</p>
+                <h4 className="font-pixel text-[9px] text-[#f4eee0]">MOMO / BINANCE</h4>
+                <p className="text-[11px] text-[#b8a896]">Direct transfer memo</p>
               </div>
             </div>
 
-            <div className="bg-[#161a2e] border-2 border-slate-700 p-3 flex items-center gap-3 shadow-pixel-sm">
-              <div className="w-8 h-8 bg-amber-500/20 text-amber-400 border border-amber-400 flex items-center justify-center shrink-0">
+            <div className="bg-[#241f18] border-2 border-[#443a2f] p-3 flex items-center gap-3 shadow-pixel-sm">
+              <div className="w-8 h-8 bg-[#ea580c]/20 text-[#fdba74] border border-[#ea580c] flex items-center justify-center shrink-0">
                 <Shield className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="font-pixel text-[9px] text-white">BOT DELIVERY</h4>
-                <p className="text-[11px] text-slate-400">Live admin alert</p>
+                <h4 className="font-pixel text-[9px] text-[#f4eee0]">BOT DELIVERY</h4>
+                <p className="text-[11px] text-[#b8a896]">Live admin alert</p>
               </div>
             </div>
           </div>
@@ -184,22 +184,22 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-8 space-y-10">
         {/* In-Stock Section */}
         <div>
-          <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-slate-800">
+          <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-[#3d3326]">
             <div>
-              <h2 className="font-pixel text-sm sm:text-base text-emerald-400 tracking-wider">
+              <h2 className="font-pixel text-sm sm:text-base text-[#fbbf24] tracking-wider">
                 AVAILABLE INVENTORY
               </h2>
-              <p className="text-xs text-slate-400 mt-1">Pick quantities and add to your bag</p>
+              <p className="text-xs text-[#b8a896] mt-1">Pick quantities and add to your bag</p>
             </div>
-            <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#1a1e36] border border-emerald-500/30 text-emerald-400">
+            <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#262018] border border-[#d97706]/40 text-[#fbbf24]">
               IN STOCK: {inStockProducts.length}
             </span>
           </div>
 
           {inStockProducts.length === 0 ? (
-            <div className="text-center py-12 bg-[#161a2e] border-2 border-slate-800 p-6">
-              <p className="font-pixel text-xs text-slate-400">NO ITEMS CURRENTLY IN STOCK</p>
-              <p className="text-xs text-slate-500 mt-2">Check back soon or see below for incoming catalog items.</p>
+            <div className="text-center py-12 bg-[#1c1914] border-2 border-[#3d3326] p-6">
+              <p className="font-pixel text-xs text-[#b8a896]">NO ITEMS CURRENTLY IN STOCK</p>
+              <p className="text-xs text-[#8c7e6e] mt-2">Check back soon or see below for incoming catalog items.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -217,14 +217,14 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
         {/* Out-Of-Stock / Not-Available Section */}
         {outOfStockProducts.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-slate-800">
+            <div className="flex items-center justify-between mb-6 pb-3 border-b-2 border-[#3d3326]">
               <div>
-                <h2 className="font-pixel text-sm sm:text-base text-rose-400 tracking-wider">
+                <h2 className="font-pixel text-sm sm:text-base text-[#f87171] tracking-wider">
                   NOT AVAILABLE (OUT OF STOCK)
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">These items are temporarily out of stock</p>
+                <p className="text-xs text-[#b8a896] mt-1">These items are temporarily out of stock</p>
               </div>
-              <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#1a1e36] border border-rose-500/30 text-rose-400">
+              <span className="font-pixel text-[10px] px-2.5 py-1 bg-[#262018] border border-rose-500/40 text-[#f87171]">
                 OUT OF STOCK: {outOfStockProducts.length}
               </span>
             </div>
