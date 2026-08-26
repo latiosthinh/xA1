@@ -112,16 +112,6 @@ export default function StorefrontClient({ initialProducts }: StorefrontClientPr
         notificationBell={
           <NotificationBell
             onOpenModal={openMessageModal}
-            onNewMessageReceived={(msg: OrderMessageItem) => {
-              if (!msg.orderId || msg.publicMemo === "GLOBAL") {
-                openMessageModal(msg, null);
-              } else {
-                const match = customerOrders.find((o) => o.id === msg.orderId);
-                if (match) {
-                  openMessageModal(msg, match.clientToken);
-                }
-              }
-            }}
           />
         }
       />
