@@ -14,7 +14,9 @@ import {
   X,
   Check,
   Gamepad2,
-  Sparkles
+  Sparkles,
+  Upload,
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { formatDualPrice } from "@/lib/currency";
@@ -42,8 +44,34 @@ export default function AdminDashboardPage() {
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("10");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageTab, setImageTab] = useState<"file" | "url">("file");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image size must be under 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageUrl(reader.result as string);
+      setError("");
+    };
+    reader.onerror = () => {
+      setError("Failed to read image file");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const router = useRouter();
 
@@ -355,7 +383,7 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-pixel text-[9px] uppercase text-slate-400 mb-1.5">
                     Price (VND) *
@@ -390,19 +418,91 @@ export default function AdminDashboardPage() {
                     className="w-full bg-[#0d0f18] border-2 border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600 transition"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block font-pixel text-[9px] uppercase text-slate-400 mb-1.5">
-                    Image URL
+              {/* Product Image Selection: File Upload or Direct URL */}
+              <div className="border-2 border-slate-700/80 bg-[#0d0f18] p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-pixel text-[9px] uppercase text-slate-400">
+                    Product Image
                   </label>
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full bg-[#0d0f18] border-2 border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600 transition"
-                  />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setImageTab("file")}
+                      className={`font-pixel text-[8px] px-2 py-0.5 border ${
+                        imageTab === "file"
+                          ? "bg-emerald-500 text-slate-950 border-emerald-300 font-bold"
+                          : "bg-[#161a2e] text-slate-400 border-slate-700 hover:text-white"
+                      }`}
+                    >
+                      UPLOAD FILE
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageTab("url")}
+                      className={`font-pixel text-[8px] px-2 py-0.5 border ${
+                        imageTab === "url"
+                          ? "bg-emerald-500 text-slate-950 border-emerald-300 font-bold"
+                          : "bg-[#161a2e] text-slate-400 border-slate-700 hover:text-white"
+                      }`}
+                    >
+                      IMAGE URL
+                    </button>
+                  </div>
                 </div>
+
+                {imageTab === "file" ? (
+                  <div>
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-emerald-400/70 bg-[#121524] p-3 cursor-pointer transition text-center">
+                      <Upload className="w-5 h-5 text-emerald-400 mb-1" />
+                      <span className="font-pixel text-[9px] text-slate-300">CHOOSE IMAGE FILE</span>
+                      <span className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, GIF, WebP (max 2MB)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.png or data:image/..."
+                      className="w-full bg-[#121524] border-2 border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600 transition"
+                    />
+                  </div>
+                )}
+
+                {/* Preview Thumbnail */}
+                {imageUrl && (
+                  <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 bg-[#121524] border border-slate-700 flex items-center justify-center overflow-hidden shrink-0">
+                        <img
+                          src={imageUrl}
+                          alt="Preview"
+                          className="w-full h-full object-contain pixelated"
+                          style={{ imageRendering: "pixelated" }}
+                        />
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                        Image attached
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl("")}
+                      className="font-pixel text-[8px] text-rose-400 hover:text-rose-300 border border-rose-600/60 bg-rose-950/40 px-2 py-1"
+                    >
+                      REMOVE
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
