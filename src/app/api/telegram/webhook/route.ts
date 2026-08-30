@@ -467,38 +467,38 @@ export async function POST(request: Request) {
     const command = firstWord.split("@")[0].toLowerCase();
     const restText = rawText.substring(firstWord.length).trim();
 
-    // 0. Emoji inspection helper (send custom emoji or /emoji to inspect)
+    // 0. Catch-all Custom Emoji inspection helper (works on ANY message containing custom emojis)
     const customEmojiEntities = (messageObj?.entities || []).filter(
       (e: { type: string; custom_emoji_id?: string }) => e.type === "custom_emoji" && e.custom_emoji_id
     );
 
-    if (customEmojiEntities.length > 0 || command === "/emoji") {
-      if (customEmojiEntities.length > 0) {
-        const results = customEmojiEntities.map(
-          (e: { offset: number; length: number; custom_emoji_id?: string }) => {
-            const char = rawText.substring(e.offset, e.offset + e.length);
-            return `• ${char} ➔ \`${e.custom_emoji_id}\``;
-          }
-        );
+    if (customEmojiEntities.length > 0) {
+      const results = customEmojiEntities.map(
+        (e: { offset: number; length: number; custom_emoji_id?: string }) => {
+          const char = rawText.substring(e.offset, e.offset + e.length);
+          return `• ${char} ➔ \`${e.custom_emoji_id}\``;
+        }
+      );
 
-        if (bot && chatId) {
-          await bot.api.sendMessage(
-            chatId,
-            `✨ *DETECTED CUSTOM EMOJI IDs:*\n\n${results.join("\n")}\n\n_Copy and send these IDs to map your custom brand logos!_`,
-            { parse_mode: "Markdown" }
-          );
-        }
-        return NextResponse.json({ ok: true });
-      } else {
-        if (bot && chatId) {
-          await bot.api.sendMessage(
-            chatId,
-            `ℹ️ *How to use /emoji:*\n\nSend \`/emoji\` followed by any custom emojis from your sticker pack.\nExample: \`/emoji ♊ ✂️ ⚡\``,
-            { parse_mode: "Markdown" }
-          );
-        }
-        return NextResponse.json({ ok: true });
+      if (bot && chatId) {
+        await bot.api.sendMessage(
+          chatId,
+          `✨ *DETECTED CUSTOM EMOJI IDs:*\n\n${results.join("\n")}\n\n_Copy and paste these IDs into the chat so I can put your custom brand logos in the bot!_`,
+          { parse_mode: "Markdown" }
+        );
       }
+      return NextResponse.json({ ok: true });
+    }
+
+    if (command === "/emoji") {
+      if (bot && chatId) {
+        await bot.api.sendMessage(
+          chatId,
+          `ℹ️ *How to extract Custom Emoji IDs:*\n\nSend a message containing any custom emoji from your sticker pack (e.g. \`xA1pack\`).\nThe bot will automatically detect and reply with their exact \`custom_emoji_id\` numbers.`,
+          { parse_mode: "Markdown" }
+        );
+      }
+      return NextResponse.json({ ok: true });
     }
 
     // 1. /help or /start
