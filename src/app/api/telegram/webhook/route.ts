@@ -12,7 +12,7 @@ function getProductIcon(name: string): string {
   const lower = (name || "").toLowerCase();
 
   // AI & LLM Tools
-  if (lower.includes("claude") || lower.includes("anthropic")) return "🧡";
+  if (lower.includes("claude") || lower.includes("anthropic")) return "🦊";
   if (lower.includes("cursor")) return "⚡";
   if (lower.includes("gemini") || lower.includes("google")) return "♊";
   if (lower.includes("chatgpt") || lower.includes("openai") || lower.includes("gpt") || lower.includes("sora")) return "🟢";
