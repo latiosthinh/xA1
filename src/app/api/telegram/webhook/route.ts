@@ -465,6 +465,29 @@ export async function POST(request: Request) {
     const command = firstWord.split("@")[0].toLowerCase();
     const restText = rawText.substring(firstWord.length).trim();
 
+    // 0. Emoji inspection helper (send any custom emoji to get its custom_emoji_id)
+    const customEmojiEntities = (messageObj?.entities || []).filter(
+      (e: { type: string; custom_emoji_id?: string }) => e.type === "custom_emoji" && e.custom_emoji_id
+    );
+
+    if (customEmojiEntities.length > 0 && command.startsWith("/emoji")) {
+      const results = customEmojiEntities.map(
+        (e: { offset: number; length: number; custom_emoji_id?: string }) => {
+          const char = rawText.substring(e.offset, e.offset + e.length);
+          return `• ${char} ➔ \`${e.custom_emoji_id}\``;
+        }
+      );
+
+      if (bot && chatId) {
+        await bot.api.sendMessage(
+          chatId,
+          `✨ *DETECTED CUSTOM EMOJI IDs:*\n\n${results.join("\n")}\n\n_Send me these IDs to set up your custom brand logos!_`,
+          { parse_mode: "Markdown" }
+        );
+      }
+      return NextResponse.json({ ok: true });
+    }
+
     // 1. /help or /start
     if (command === "/help" || command === "/start") {
       if (bot && chatId) {
