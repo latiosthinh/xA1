@@ -11,3 +11,4 @@ local.db-journal
 *.local
 .env
 .env.production
+*.tsbuildinfo
