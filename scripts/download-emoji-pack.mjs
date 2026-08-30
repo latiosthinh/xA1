@@ -16,7 +16,6 @@ const iconifyIcons = {
   cursor: "simple-icons:cursor",
   chatgpt: "logos:openai-icon",
   coursera: "simple-icons:coursera",
-  gemini: "logos:google-gemini",
   youtube: "logos:youtube-icon",
   netflix: "logos:netflix-icon",
   spotify: "logos:spotify-icon",
@@ -43,8 +42,21 @@ const iconifyIcons = {
   facebook: "logos:facebook",
 };
 
-const customUrls = {
-  capcut: "https://upload.wikimedia.org/wikipedia/en/a/a0/Capcut-logo.svg",
+const customSvgs = {
+  // Capcut symbol only: first path up to Z, bounding box ~0 0 31.056 24
+  capcut: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 24">
+    <path d="M 31.056 4.979 V 0.215 l -5.73 3.008 v -0.178 C 25.326 1.146 23.965 0 21.994 0 H 3.831 C 1.755 0 0.5 1.146 0.5 3.045 v 4.8 L 8.523 12 L 0.5 16.191 v 4.8 C 0.5 22.854 1.755 24 3.831 24 h 18.162 c 1.97 0 3.33 -1.146 3.33 -3.009 v -0.25 l 5.731 3.044 V 18.95 L 17.73 12 l 13.327 -7.021 Z M 13.11 14.363 l 9.852 5.16 H 3.22 l 9.888 -5.16 Z m 9.78 -9.885 L 13.109 9.6 L 3.222 4.478 h 19.666 Z" fill="#000000"/>
+  </svg>`,
+  gemini: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 73 73">
+    <defs>
+      <linearGradient id="geminiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#1ba1e3"/>
+        <stop offset="50%" stop-color="#5460e6"/>
+        <stop offset="100%" stop-color="#9b72cb"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#geminiGrad)" d="M36.38 72.76c-2.846-18.788-17.592-33.533-36.38-36.38c18.788-2.847 33.534-17.593 36.38-36.38c2.847 18.787 17.593 33.533 36.38 36.38c-18.787 2.847-33.533 17.592-36.38 36.38"/>
+  </svg>`,
 };
 
 async function generate() {
@@ -76,15 +88,8 @@ async function generate() {
     }
   }
 
-  for (const [name, url] of Object.entries(customUrls)) {
+  for (const [name, svgText] of Object.entries(customSvgs)) {
     try {
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "MMOStoreBot/1.0 (https://github.com/latiosthinh/xA1; bot@store.com)",
-        },
-      });
-      if (!res.ok) continue;
-      const svgText = await res.text();
       const buf = Buffer.from(svgText);
 
       await sharp(buf)

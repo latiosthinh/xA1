@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Minus, ShoppingCart, Sparkles, Ban } from "lucide-react";
 import { Product } from "@/lib/schema";
 import { formatDualPrice } from "@/lib/currency";
+import { getProductIconUrl } from "@/lib/product-icons";
 
 interface ProductCardProps {
   product: Product;
@@ -28,6 +29,8 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
     setQuantity(1);
   };
 
+  const displayImage = getProductIconUrl(product.name, product.imageUrl);
+
   return (
     <div
       className={`bg-[#1c1914] border-2 ${
@@ -41,9 +44,9 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         <div className="flex items-start gap-3.5">
           {/* Pixelated Image-Icon */}
           <div className="w-14 h-14 bg-[#14120e] border-2 border-[#443a2f] p-1.5 shrink-0 flex items-center justify-center shadow-pixel-sm relative">
-            {product.imageUrl ? (
+            {displayImage ? (
               <img
-                src={product.imageUrl}
+                src={displayImage}
                 alt={product.name}
                 className="w-full h-full object-contain pixelated"
                 style={{ imageRendering: "pixelated" }}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatDualPrice } from "@/lib/currency";
+import { getProductIconUrl } from "@/lib/product-icons";
 
 interface Product {
   id: string;
@@ -276,30 +277,32 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-[#161a2e] border-2 border-slate-700 hover:border-emerald-400 transition flex flex-col justify-between shadow-pixel group"
-              >
-                {/* Image area */}
-                <div className="h-40 bg-[#0d0f18] relative flex items-center justify-center overflow-hidden border-b-2 border-slate-800 p-2">
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      className="w-full h-full object-contain pixelated group-hover:scale-105 transition duration-300"
-                      style={{ imageRendering: "pixelated" }}
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-emerald-400">
-                      <Sparkles className="w-8 h-8 mb-1 opacity-60" />
-                      <span className="font-pixel text-[8px] text-slate-500">NO IMAGE</span>
+            {filteredProducts.map((product) => {
+              const displayImg = getProductIconUrl(product.name, product.imageUrl);
+              return (
+                <div
+                  key={product.id}
+                  className="bg-[#161a2e] border-2 border-slate-700 hover:border-emerald-400 transition flex flex-col justify-between shadow-pixel group"
+                >
+                  {/* Image area */}
+                  <div className="h-40 bg-[#0d0f18] relative flex items-center justify-center overflow-hidden border-b-2 border-slate-800 p-2">
+                    {displayImg ? (
+                      <img
+                        src={displayImg}
+                        alt={product.name}
+                        className="w-full h-full object-contain pixelated group-hover:scale-105 transition duration-300"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-emerald-400">
+                        <Sparkles className="w-8 h-8 mb-1 opacity-60" />
+                        <span className="font-pixel text-[8px] text-slate-500">NO IMAGE</span>
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 bg-[#0e111f] border-2 border-slate-700 text-emerald-400 font-pixel text-[9px] px-2 py-0.5 shadow-pixel-sm">
+                      {formatDualPrice(product.price)}
                     </div>
-                  )}
-                  <div className="absolute top-2 right-2 bg-[#0e111f] border-2 border-slate-700 text-emerald-400 font-pixel text-[9px] px-2 py-0.5 shadow-pixel-sm">
-                    {formatDualPrice(product.price)}
                   </div>
-                </div>
 
                 {/* Content */}
                 <div className="p-4 flex-1 flex flex-col justify-between">
@@ -341,7 +344,8 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </main>

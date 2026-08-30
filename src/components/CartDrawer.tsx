@@ -2,6 +2,7 @@
 
 import { X, Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
 import { formatDualPrice } from "@/lib/currency";
+import { getProductIconUrl } from "@/lib/product-icons";
 
 export interface CartItem {
   id: string;
@@ -67,31 +68,33 @@ export default function CartDrawer({
                 <p className="text-xs text-[#716556] mt-2">Pick an item from the catalog</p>
               </div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-[#241f18] border-2 border-[#443a2f] p-3 flex items-center gap-3 shadow-pixel-sm"
-                >
-                  <div className="w-12 h-12 bg-[#14120e] border-2 border-[#332b20] shrink-0 p-1 flex items-center justify-center">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.name}
-                        className="w-full h-full object-contain pixelated"
-                        style={{ imageRendering: "pixelated" }}
-                      />
-                    ) : (
-                      <ShoppingBag className="w-5 h-5 text-[#fbbf24]" />
-                    )}
-                  </div>
+              items.map((item) => {
+                const itemImg = getProductIconUrl(item.name, item.imageUrl);
+                return (
+                  <div
+                    key={item.id}
+                    className="bg-[#241f18] border-2 border-[#443a2f] p-3 flex items-center gap-3 shadow-pixel-sm"
+                  >
+                    <div className="w-12 h-12 bg-[#14120e] border-2 border-[#332b20] shrink-0 p-1 flex items-center justify-center">
+                      {itemImg ? (
+                        <img
+                          src={itemImg}
+                          alt={item.name}
+                          className="w-full h-full object-contain pixelated"
+                          style={{ imageRendering: "pixelated" }}
+                        />
+                      ) : (
+                        <ShoppingBag className="w-5 h-5 text-[#fbbf24]" />
+                      )}
+                    </div>
 
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-pixel text-[10px] text-[#f4eee0] truncate">{item.name}</h4>
-                    <p className="font-pixel text-[10px] text-[#fbbf24] mt-1">
-                      {formatDualPrice(item.price * item.quantity)}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-pixel text-[10px] text-[#f4eee0] truncate">{item.name}</h4>
+                      <p className="font-pixel text-[10px] text-[#fbbf24] mt-1">
+                        {formatDualPrice(item.price * item.quantity)}
+                      </p>
 
-                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center border border-[#443a2f] bg-[#14120e]">
                         <button
                           onClick={() => onUpdateQuantity(item.id, -1)}
@@ -120,7 +123,8 @@ export default function CartDrawer({
                     </div>
                   </div>
                 </div>
-              ))
+              );
+            })
             )}
           </div>
 
