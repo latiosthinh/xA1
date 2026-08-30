@@ -447,7 +447,7 @@ export async function POST(request: Request) {
     const chatId = String(messageObj?.chat?.id || "").trim();
     const sticker = messageObj?.sticker;
 
-    // Handle sticker sent directly
+    // Handle sticker sent directly or custom emoji sticker
     if (sticker) {
       if (bot && chatId) {
         await bot.api.sendMessage(
@@ -456,7 +456,8 @@ export async function POST(request: Request) {
             `• Emoji: ${sticker.emoji || "_none_"}\n` +
             `• Set Name: \`${sticker.set_name || "_none_"}\`\n` +
             `• Custom Emoji ID: \`${sticker.custom_emoji_id || "_none_"}\`\n` +
-            `• File ID: \`${sticker.file_id}\``,
+            `• File ID: \`${sticker.file_id}\`\n\n` +
+            (sticker.custom_emoji_id ? `_Copy Custom Emoji ID:_ \`${sticker.custom_emoji_id}\`` : ""),
           { parse_mode: "Markdown" }
         );
       }
