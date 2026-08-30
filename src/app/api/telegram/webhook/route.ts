@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, initDb } from "@/lib/db";
-import { orders, orderMessages } from "@/lib/schema";
+import { orders, orderMessages, products } from "@/lib/schema";
 import { eq, or } from "drizzle-orm";
 import { bot } from "@/lib/telegram";
 import crypto from "crypto";
@@ -98,11 +98,43 @@ export async function POST(request: Request) {
 
         let content = "";
         let newOrderStatus = matchedOrder.status;
+        let inventorySummary: string[] = [];
 
         // Code 1: Payment Success
         if (statusArg === "1") {
           content = "CODE:1" + (customNote ? ` | ${customNote}` : "");
           newOrderStatus = "COMPLETED";
+
+          // Deduct stock if order was not already completed
+          if (matchedOrder.status !== "COMPLETED") {
+            try {
+              const items = JSON.parse(matchedOrder.itemsJson || "[]");
+              for (const item of items) {
+                if (!item) continue;
+                const qty = item.quantity || 1;
+                
+                // Find existing product by ID or fallback by name
+                let existingProduct = null;
+                if (item.id) {
+                  const found = await db.select().from(products).where(eq(products.id, item.id)).limit(1);
+                  if (found.length > 0) existingProduct = found[0];
+                }
+                if (!existingProduct && item.name) {
+                  const found = await db.select().from(products).where(eq(products.name, item.name)).limit(1);
+                  if (found.length > 0) existingProduct = found[0];
+                }
+
+                if (existingProduct) {
+                  const currentStock = existingProduct.stock ?? 0;
+                  const newStock = Math.max(0, currentStock - qty);
+                  await db.update(products).set({ stock: newStock }).where(eq(products.id, existingProduct.id));
+                  inventorySummary.push(`• ${existingProduct.name}: ${currentStock} -> ${newStock} (-${qty})`);
+                }
+              }
+            } catch (err) {
+              console.error("Failed to parse itemsJson or deduct stock:", err);
+            }
+          }
         }
         // Code 0: Payment Not Success / Rejected
         else if (statusArg === "0") {
@@ -148,9 +180,14 @@ export async function POST(request: Request) {
               ? "⚠️ NEED VERIFICATION"
               : "💬 DIRECT MESSAGE";
 
+          let messageText = `*${statusLabel} dispatched for \`${matchedOrder.publicMemo}\`!*\nStatus modal is now live for the customer.`;
+          if (inventorySummary.length > 0) {
+            messageText += `\n\n📦 *Inventory Updated:*\n` + inventorySummary.join("\n");
+          }
+
           await bot.api.sendMessage(
             chatId,
-            `*${statusLabel} dispatched for \`${matchedOrder.publicMemo}\`!*\nStatus modal is now live for the customer.`,
+            messageText,
             { parse_mode: "Markdown" }
           );
         }
