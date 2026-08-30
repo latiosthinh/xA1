@@ -441,10 +441,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // --- HANDLE TEXT MESSAGES ---
+    // --- HANDLE TEXT / STICKER / MEDIA MESSAGES ---
     const messageObj = update?.message || update?.channel_post;
-    const rawText = (messageObj?.text || "").trim();
+    const rawText = (messageObj?.text || messageObj?.caption || "").trim();
     const chatId = String(messageObj?.chat?.id || "").trim();
+    const sticker = messageObj?.sticker;
+
+    // Handle sticker sent directly
+    if (sticker) {
+      if (bot && chatId) {
+        await bot.api.sendMessage(
+          chatId,
+          `✨ *STICKER / EMOJI INFO:*\n\n` +
+            `• Emoji: ${sticker.emoji || "_none_"}\n` +
+            `• Set Name: \`${sticker.set_name || "_none_"}\`\n` +
+            `• Custom Emoji ID: \`${sticker.custom_emoji_id || "_none_"}\`\n` +
+            `• File ID: \`${sticker.file_id}\``,
+          { parse_mode: "Markdown" }
+        );
+      }
+      return NextResponse.json({ ok: true });
+    }
 
     if (!rawText) {
       return NextResponse.json({ ok: true });
