@@ -6,7 +6,7 @@ import { bot } from "@/lib/telegram";
 import { formatDualPrice } from "@/lib/currency";
 import crypto from "crypto";
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 10;
 
 function getProductIcon(name: string): string {
   const lower = (name || "").toLowerCase();
@@ -102,6 +102,7 @@ function renderProductList(
   if (page > 1) {
     navRow.push({ text: "◀ Prev", callback_data: `list:${page - 1}` });
   }
+  navRow.push({ text: `🔄 Refresh (p.${page})`, callback_data: `refresh:list:${page}` });
   if (page < totalPages) {
     navRow.push({ text: "Next ▶", callback_data: `list:${page + 1}` });
   }
@@ -129,12 +130,17 @@ function renderProductDetail(product: Product): {
   const inStock = stock > 0;
   const stockStatus = inStock ? `🟢 IN STOCK (${stock})` : "🔴 OUT OF STOCK (0)";
 
-  const text = `${icon} *PRODUCT DETAILS*\n\n` +
+  // Hidden image preview link so Telegram renders the product image preview at top
+  const imagePreview = product.imageUrl && product.imageUrl.startsWith("http")
+    ? `[\u200B](${product.imageUrl})`
+    : "";
+
+  const text = `${imagePreview}${icon} *PRODUCT DETAILS*\n\n` +
     `*ID:* \`${product.id}\`\n` +
     `*Name:* ${product.name}\n` +
     `*Price:* ${formatDualPrice(product.price)}\n` +
     `*Stock:* ${stockStatus}\n` +
-    `*Image:* ${product.imageUrl || "_None_"}\n` +
+    `*Image:* ${product.imageUrl ? `[View Image](${product.imageUrl})` : "_None_"}\n` +
     `*Description:* ${product.description || "_None_"}\n\n` +
     `_Use buttons below to adjust stock or edit/delete._`;
 
@@ -149,6 +155,7 @@ function renderProductDetail(product: Product): {
       { text: "🗑️ Delete", callback_data: `del:${product.id}` },
     ],
     [
+      { text: "🔄 Refresh", callback_data: `refresh:view:${product.id}` },
       { text: "◀ Back to List", callback_data: "back:list" },
     ],
   ];
@@ -206,9 +213,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // 1. back:list or list:<page>
-      if (cbData === "back:list" || cbData.startsWith("list:")) {
-        const page = cbData.startsWith("list:") ? Math.max(1, parseInt(cbData.split(":")[1], 10) || 1) : 1;
+      // 1. back:list, list:<page>, or refresh:list:<page>
+      if (cbData === "back:list" || cbData.startsWith("list:") || cbData.startsWith("refresh:list:")) {
+        const rawPage = cbData.startsWith("refresh:list:")
+          ? cbData.split(":")[2]
+          : cbData.startsWith("list:")
+          ? cbData.split(":")[1]
+          : "1";
+        const page = Math.max(1, parseInt(rawPage, 10) || 1);
         const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
         const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
         const currentPage = Math.min(page, totalPages);
@@ -219,7 +231,9 @@ export async function POST(request: Request) {
           parse_mode: "Markdown",
           reply_markup: rendered.reply_markup,
         });
-        await bot.api.answerCallbackQuery(cbId);
+        await bot.api.answerCallbackQuery(cbId, {
+          text: cbData.startsWith("refresh:") ? "🔄 Product list refreshed!" : undefined,
+        });
         return NextResponse.json({ ok: true });
       }
 
@@ -283,9 +297,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // 2. view:<id>
-      if (cbData.startsWith("view:")) {
-        const prodId = cbData.split(":")[1];
+      // 2. view:<id> or refresh:view:<id>
+      if (cbData.startsWith("view:") || cbData.startsWith("refresh:view:")) {
+        const prodId = cbData.startsWith("refresh:view:") ? cbData.split(":")[2] : cbData.split(":")[1];
         const found = await db.select().from(products).where(eq(products.id, prodId)).limit(1);
         if (found.length === 0) {
           await bot.api.answerCallbackQuery(cbId, { text: "Product not found.", show_alert: true });
@@ -296,7 +310,9 @@ export async function POST(request: Request) {
           parse_mode: "Markdown",
           reply_markup: rendered.reply_markup,
         });
-        await bot.api.answerCallbackQuery(cbId);
+        await bot.api.answerCallbackQuery(cbId, {
+          text: cbData.startsWith("refresh:") ? "🔄 Product status refreshed!" : undefined,
+        });
         return NextResponse.json({ ok: true });
       }
 
