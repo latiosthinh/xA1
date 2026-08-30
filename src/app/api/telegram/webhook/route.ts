@@ -8,6 +8,61 @@ import crypto from "crypto";
 
 const PAGE_SIZE = 5;
 
+function getProductIcon(name: string): string {
+  const lower = (name || "").toLowerCase();
+  if (lower.includes("claude")) return "🤖";
+  if (lower.includes("cursor")) return "⚡";
+  if (lower.includes("coursera") || lower.includes("udemy") || lower.includes("learn") || lower.includes("edu")) return "🎓";
+  if (lower.includes("capcut") || lower.includes("video") || lower.includes("premiere") || lower.includes("edit")) return "🎬";
+  if (lower.includes("chatgpt") || lower.includes("gpt") || lower.includes("openai")) return "💬";
+  if (lower.includes("netflix") || lower.includes("youtube") || lower.includes("disney") || lower.includes("hulu") || lower.includes("film")) return "🍿";
+  if (lower.includes("spotify") || lower.includes("music") || lower.includes("sound") || lower.includes("apple music")) return "🎵";
+  if (lower.includes("steam") || lower.includes("game") || lower.includes("play") || lower.includes("playstation") || lower.includes("xbox")) return "🎮";
+  if (lower.includes("vpn") || lower.includes("key") || lower.includes("license") || lower.includes("nord")) return "🔑";
+  if (lower.includes("github") || lower.includes("copilot") || lower.includes("gitlab")) return "🐙";
+  if (lower.includes("canva") || lower.includes("design") || lower.includes("adobe") || lower.includes("figma") || lower.includes("ps")) return "🎨";
+  if (lower.includes("win") || lower.includes("office") || lower.includes("microsoft") || lower.includes("365")) return "🪟";
+  if (lower.includes("telegram") || lower.includes("tele") || lower.includes("tg")) return "✈️";
+  if (lower.includes("discord") || lower.includes("nitro")) return "🚀";
+  if (lower.includes("drive") || lower.includes("cloud") || lower.includes("storage")) return "☁️";
+  return "📦";
+}
+
+function renderHelpMenu(): {
+  text: string;
+  reply_markup: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
+} {
+  const text = `🛠️ *MMO STORE ADMIN BOT*\n\n` +
+    `📦 *Product Catalog:*\n` +
+    `• \`/products\` or \`/list\` - Browse products with interactive buttons\n` +
+    `• \`/product <id>\` - View details & adjust stock with + / - buttons\n` +
+    `• \`/setstock <id> <stock>\` - Update stock level directly\n` +
+    `• \`/addproduct <name> | <price> | <stock> | [imageUrl] | [description]\`\n` +
+    `• \`/editproduct <id> | <name> | <price> | <stock> | [imageUrl] | [description]\`\n` +
+    `• \`/delproduct <id>\` - Delete product\n\n` +
+    `💳 *Order Fulfillment:*\n` +
+    `• \`/send <OrderID> 1\` - Complete order & auto-deduct stock\n` +
+    `• \`/send <OrderID> 0\` - Reject order\n` +
+    `• \`/send <OrderID> 2\` - Mark order needing verification\n` +
+    `• \`/send <OrderID> <Message>\` - Send custom credentials\n\n` +
+    `📢 *Broadcasts:*\n` +
+    `• \`/broadcast <message>\` - Global announcement to all visitors\n\n` +
+    `_👇 Tap below for quick actions or command templates:_`;
+
+  const keyboard = [
+    [
+      { text: "📦 Browse Products", callback_data: "list:1" },
+      { text: "➕ Add Product", callback_data: "help:add" },
+    ],
+    [
+      { text: "💳 Orders Guide", callback_data: "help:orders" },
+      { text: "📢 Broadcast Guide", callback_data: "help:broadcast" },
+    ],
+  ];
+
+  return { text, reply_markup: { inline_keyboard: keyboard } };
+}
+
 function renderProductList(
   items: Product[],
   page: number,
@@ -16,7 +71,11 @@ function renderProductList(
   if (items.length === 0) {
     return {
       text: "📦 *Product Catalog is empty.*\nUse `/addproduct <name> | <price> | <stock> | [imageUrl] | [description]` to add one.",
-      reply_markup: { inline_keyboard: [] },
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "➕ Add Product", callback_data: "help:add" }],
+        ],
+      },
     };
   }
 
@@ -24,13 +83,16 @@ function renderProductList(
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
 
   for (const item of items) {
-    const stockStatus = (item.stock ?? 0) > 0 ? `IN STOCK (${item.stock})` : "OUT OF STOCK";
-    text += `📦 *${item.name}* (ID: \`${item.id}\`)\n` +
+    const icon = getProductIcon(item.name);
+    const inStock = (item.stock ?? 0) > 0;
+    const stockStatus = inStock ? `🟢 IN STOCK (${item.stock})` : "🔴 OUT OF STOCK";
+    text += `${icon} *${item.name}* (ID: \`${item.id}\`)\n` +
       `💰 Price: ${formatDualPrice(item.price)} | 📊 Stock: ${stockStatus}\n\n`;
 
+    const buttonStockIndicator = inStock ? `🟢 (${item.stock})` : `🔴 (0)`;
     keyboard.push([
       {
-        text: `🔍 ${item.name} (${item.stock ?? 0})`,
+        text: `${icon} ${item.name} ${buttonStockIndicator}`,
         callback_data: `view:${item.id}`,
       },
     ]);
@@ -47,6 +109,11 @@ function renderProductList(
     keyboard.push(navRow);
   }
 
+  keyboard.push([
+    { text: "➕ Add Product", callback_data: "help:add" },
+    { text: "🛠️ Menu", callback_data: "help:menu" },
+  ]);
+
   return {
     text: text.trim(),
     reply_markup: { inline_keyboard: keyboard },
@@ -57,10 +124,12 @@ function renderProductDetail(product: Product): {
   text: string;
   reply_markup: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> };
 } {
+  const icon = getProductIcon(product.name);
   const stock = product.stock ?? 0;
-  const stockStatus = stock > 0 ? `IN STOCK (${stock})` : "OUT OF STOCK (0)";
+  const inStock = stock > 0;
+  const stockStatus = inStock ? `🟢 IN STOCK (${stock})` : "🔴 OUT OF STOCK (0)";
 
-  const text = `📦 *PRODUCT DETAILS*\n\n` +
+  const text = `${icon} *PRODUCT DETAILS*\n\n` +
     `*ID:* \`${product.id}\`\n` +
     `*Name:* ${product.name}\n` +
     `*Price:* ${formatDualPrice(product.price)}\n` +
@@ -72,6 +141,7 @@ function renderProductDetail(product: Product): {
   const keyboard = [
     [
       { text: "➖ Stock -1", callback_data: `stock:${product.id}:-` },
+      { text: `📊 ${stock}`, callback_data: `stock:${product.id}:noop` },
       { text: "➕ Stock +1", callback_data: `stock:${product.id}:+` },
     ],
     [
@@ -149,6 +219,66 @@ export async function POST(request: Request) {
           parse_mode: "Markdown",
           reply_markup: rendered.reply_markup,
         });
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
+      // 1.1 help:menu
+      if (cbData === "help:menu") {
+        const rendered = renderHelpMenu();
+        await bot.api.editMessageText(cbChatId, cbMessageId, rendered.text, {
+          parse_mode: "Markdown",
+          reply_markup: rendered.reply_markup,
+        });
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
+      // 1.2 help:add
+      if (cbData === "help:add") {
+        await bot.api.sendMessage(
+          cbChatId,
+          `➕ *HOW TO ADD PRODUCT:*\n\n` +
+          `Copy & modify this command:\n` +
+          `\`/addproduct Claude Max 5X | 500000 | 10 | https://... | 30 days subscription\`\n\n` +
+          `*Format:* \`/addproduct <Name> | <PriceVND> | <Stock> | [ImageUrl] | [Description]\``,
+          { parse_mode: "Markdown" }
+        );
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
+      // 1.3 help:orders
+      if (cbData === "help:orders") {
+        await bot.api.sendMessage(
+          cbChatId,
+          `💳 *ORDER FULFILLMENT GUIDE:*\n\n` +
+          `• \`/send <OrderID> 1\` - Mark complete & auto-deduct item stock\n` +
+          `• \`/send <OrderID> 0\` - Reject order\n` +
+          `• \`/send <OrderID> 2\` - Ask customer to verify payment proof\n` +
+          `• \`/send <OrderID> <Message>\` - Send delivery details / credentials\n\n` +
+          `*Example:* \`/send ORD-1234 User: test@gmail.com | Pass: 123456\``,
+          { parse_mode: "Markdown" }
+        );
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
+      // 1.4 help:broadcast
+      if (cbData === "help:broadcast") {
+        await bot.api.sendMessage(
+          cbChatId,
+          `📢 *BROADCAST MESSAGE GUIDE:*\n\n` +
+          `Send a pop-up notice to all website visitors:\n` +
+          `\`/broadcast 🔥 Super sale 20% off all accounts today!\``,
+          { parse_mode: "Markdown" }
+        );
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
+      // 1.5 noop
+      if (cbData.includes(":noop")) {
         await bot.api.answerCallbackQuery(cbId);
         return NextResponse.json({ ok: true });
       }
@@ -296,23 +426,11 @@ export async function POST(request: Request) {
     // 1. /help or /start
     if (command === "/help" || command === "/start") {
       if (bot && chatId) {
-        const helpText = `🛠️ *MMO STORE ADMIN BOT COMMANDS*\n\n` +
-          `📦 *Product Catalog:*\n` +
-          `• \`/products\` or \`/list\` - Browse products with interactive buttons\n` +
-          `• \`/product <id>\` or \`/view <id>\` - View product details & manage stock\n` +
-          `• \`/setstock <id> <stock>\` - Update stock level directly\n` +
-          `• \`/addproduct <name> | <price> | <stock> | [imageUrl] | [description]\` - Create product\n` +
-          `• \`/editproduct <id> | <name> | <price> | <stock> | [imageUrl] | [description]\` - Edit product\n` +
-          `• \`/delproduct <id>\` - Delete product\n\n` +
-          `💳 *Order Fulfillment:*\n` +
-          `• \`/send <OrderID> 1\` - Complete order & auto-deduct stock\n` +
-          `• \`/send <OrderID> 0\` - Reject order\n` +
-          `• \`/send <OrderID> 2\` - Mark order needing verification\n` +
-          `• \`/send <OrderID> <Message>\` - Send custom message/credentials\n\n` +
-          `📢 *Broadcasts:*\n` +
-          `• \`/broadcast <message>\` - Global announcement to all visitors`;
-
-        await bot.api.sendMessage(chatId, helpText, { parse_mode: "Markdown" });
+        const rendered = renderHelpMenu();
+        await bot.api.sendMessage(chatId, rendered.text, {
+          parse_mode: "Markdown",
+          reply_markup: rendered.reply_markup,
+        });
       }
       return NextResponse.json({ ok: true });
     }
