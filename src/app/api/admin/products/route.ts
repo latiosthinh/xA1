@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   try {
     await initDb();
     const body = await request.json();
-    const { name, description, price, stock, imageUrl } = body;
+    const { name, duration, deliveryType, warranty, description, price, stock, imageUrl } = body;
 
     if (!name || price === undefined || isNaN(Number(price))) {
       return NextResponse.json({ error: "Name and valid price are required" }, { status: 400 });
@@ -29,6 +29,9 @@ export async function POST(request: Request) {
     const newProduct = {
       id,
       name: String(name).trim(),
+      duration: duration ? String(duration).trim() : "",
+      deliveryType: deliveryType ? String(deliveryType).trim() : "",
+      warranty: warranty ? String(warranty).trim() : "",
       description: description ? String(description).trim() : "",
       price: Number(price),
       stock: stock !== undefined && !isNaN(Number(stock)) ? Math.max(0, Number(stock)) : 0,

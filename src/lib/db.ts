@@ -18,6 +18,9 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      duration TEXT DEFAULT '',
+      delivery_type TEXT DEFAULT '',
+      warranty TEXT DEFAULT '',
       description TEXT DEFAULT '',
       price REAL NOT NULL,
       stock INTEGER NOT NULL DEFAULT 0,
@@ -26,11 +29,57 @@ export async function initDb() {
     );
   `);
 
-  // Migrate stock column if existing table lacks it
+  // Migrate new attribute columns if existing table lacks them
   try {
     await rawClient.execute(`ALTER TABLE products ADD COLUMN stock INTEGER NOT NULL DEFAULT 0;`);
-  } catch {
-    // Column already exists
+  } catch {}
+  try {
+    await rawClient.execute(`ALTER TABLE products ADD COLUMN duration TEXT DEFAULT '';`);
+  } catch {}
+  try {
+    await rawClient.execute(`ALTER TABLE products ADD COLUMN delivery_type TEXT DEFAULT '';`);
+  } catch {}
+  try {
+    await rawClient.execute(`ALTER TABLE products ADD COLUMN warranty TEXT DEFAULT '';`);
+  } catch {}
+
+  // Migrate existing description strings to duration/delivery_type/warranty columns
+  try {
+    const existing = await rawClient.execute(`
+      SELECT id, description, duration, delivery_type, warranty FROM products
+      WHERE (duration IS NULL OR duration = '') 
+        AND description IS NOT NULL 
+        AND description != '';
+    `);
+
+    for (const row of existing.rows) {
+      const id = String(row.id);
+      const descStr = String(row.description || "");
+      const segments = descStr.split("-").map((s) => s.trim()).filter(Boolean);
+      let dur = "";
+      let dt = "";
+      let war = "";
+
+      if (segments.length >= 3) {
+        dur = segments[0];
+        dt = segments[1];
+        war = segments.slice(2).join(" - ");
+      } else if (segments.length === 2) {
+        dur = segments[0];
+        dt = segments[1];
+      } else if (segments.length === 1) {
+        dur = segments[0];
+      }
+
+      if (dur || dt || war) {
+        await rawClient.execute({
+          sql: `UPDATE products SET duration = ?, delivery_type = ?, warranty = ? WHERE id = ?;`,
+          args: [dur, dt, war, id],
+        });
+      }
+    }
+  } catch (err) {
+    console.warn("Product attribute data migration note:", err);
   }
 
   await rawClient.execute(`

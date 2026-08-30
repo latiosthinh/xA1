@@ -6,6 +6,8 @@ import { Product } from "@/lib/schema";
 import { formatDualPrice } from "@/lib/currency";
 import { getProductIconUrl } from "@/lib/product-icons";
 
+import { getEffectiveProductAttributes } from "@/lib/description";
+
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product, quantity: number) => void;
@@ -90,10 +92,42 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           </div>
         </div>
 
-        {/* Description */}
-        <p className="text-xs text-[#b8a896] mt-3 line-clamp-2 leading-relaxed bg-[#14120e] p-2 border border-[#332b20]">
-          {product.description || "Digital Game Item - Instant delivery to browser."}
-        </p>
+        {/* Description & Specs Badge */}
+        {(() => {
+          const specs = getEffectiveProductAttributes(product);
+          const hasSpecs = Boolean(specs.duration || specs.type || specs.warranty);
+
+          if (hasSpecs) {
+            return (
+              <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] font-pixel">
+                {specs.duration && (
+                  <span className="bg-[#1c140d] border border-[#d97706]/40 text-[#fcd34d] px-1.5 py-0.5 shadow-pixel-sm flex items-center gap-1">
+                    <span className="text-[11px] leading-none">⏳</span>
+                    <span>{specs.duration}</span>
+                  </span>
+                )}
+                {specs.type && (
+                  <span className="bg-[#14181f] border border-[#38bdf8]/40 text-[#7dd3fc] px-1.5 py-0.5 shadow-pixel-sm flex items-center gap-1">
+                    <span className="text-[11px] leading-none">📦</span>
+                    <span>{specs.type}</span>
+                  </span>
+                )}
+                {specs.warranty && (
+                  <span className="bg-[#141f17] border border-[#22c55e]/40 text-[#86efac] px-1.5 py-0.5 shadow-pixel-sm flex items-center gap-1">
+                    <span className="text-[11px] leading-none">🛡️</span>
+                    <span>{specs.warranty.toLowerCase().startsWith("warranty") ? specs.warranty : `Warranty ${specs.warranty}`}</span>
+                  </span>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <p className="text-xs text-[#b8a896] mt-3 line-clamp-2 leading-relaxed bg-[#14120e] p-2 border border-[#332b20]">
+              {product.description || "Digital Game Item - Instant delivery to browser."}
+            </p>
+          );
+        })()}
       </div>
 
       {/* Action Footer */}

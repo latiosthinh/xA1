@@ -4,6 +4,7 @@ import { orders, orderMessages, products, type Product } from "@/lib/schema";
 import { eq, or, desc } from "drizzle-orm";
 import { bot } from "@/lib/telegram";
 import { formatDualPrice } from "@/lib/currency";
+import { parseProductDescription, formatProductDescription } from "@/lib/description";
 import crypto from "crypto";
 
 const PAGE_SIZE = 10;
@@ -101,9 +102,11 @@ function renderProductList(
   items: Product[],
   page: number,
   totalPages: number,
-  filter: "all" | "instock" = "all"
+  filter: "all" | "instock" = "all",
+  mode: "view" | "edit" = "view"
 ): { text: string; reply_markup: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> } } {
   const filterTitle = filter === "instock" ? " (In-Stock Only)" : "";
+  const modeTitle = mode === "edit" ? " ✏️ CHOOSE TO EDIT" : "";
   if (items.length === 0) {
     return {
       text: `📦 *Product Catalog is empty${filter === "instock" ? " (No in-stock products)" : ""}.*\nUse \`/addproduct <name> | <price> | <stock> | [imageUrl] | [description]\` to add one.`,
@@ -112,7 +115,7 @@ function renderProductList(
           [
             {
               text: filter === "instock" ? "👁️ View All" : "🟢 In-Stock Only",
-              callback_data: filter === "instock" ? "list:1:all" : "list:1:instock",
+              callback_data: filter === "instock" ? `list:1:all:${mode}` : `list:1:instock:${mode}`,
             },
             { text: "➕ Add Product", callback_data: "help:add" },
           ],
@@ -121,7 +124,10 @@ function renderProductList(
     };
   }
 
-  let text = `📦 *PRODUCT CATALOG${filterTitle} (Page ${page}/${totalPages})*\n\n`;
+  let text = `📦 *PRODUCT CATALOG${modeTitle}${filterTitle} (Page ${page}/${totalPages})*\n\n`;
+  if (mode === "edit") {
+    text += `_Select a product below to get the edit command template:_\n\n`;
+  }
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
 
   for (const item of items) {
@@ -132,21 +138,23 @@ function renderProductList(
       `💰 Price: ${formatDualPrice(item.price)} | 📊 Stock: ${stockStatus}\n\n`;
 
     const buttonStockIndicator = inStock ? `🟢 (${item.stock})` : `🔴 (0)`;
+    const cb = mode === "edit" ? `edit:${item.id}` : `view:${item.id}`;
+    const btnLabel = mode === "edit" ? `✏️ ${item.name}` : `${icon} ${item.name} ${buttonStockIndicator}`;
     keyboard.push([
       {
-        text: `${icon} ${item.name} ${buttonStockIndicator}`,
-        callback_data: `view:${item.id}`,
+        text: btnLabel,
+        callback_data: cb,
       },
     ]);
   }
 
   const navRow: Array<{ text: string; callback_data: string }> = [];
   if (page > 1) {
-    navRow.push({ text: "◀ Prev", callback_data: `list:${page - 1}:${filter}` });
+    navRow.push({ text: "◀ Prev", callback_data: `list:${page - 1}:${filter}:${mode}` });
   }
-  navRow.push({ text: `🔄 Refresh (p.${page})`, callback_data: `refresh:list:${page}:${filter}` });
+  navRow.push({ text: `🔄 Refresh (p.${page})`, callback_data: `refresh:list:${page}:${filter}:${mode}` });
   if (page < totalPages) {
-    navRow.push({ text: "Next ▶", callback_data: `list:${page + 1}:${filter}` });
+    navRow.push({ text: "Next ▶", callback_data: `list:${page + 1}:${filter}:${mode}` });
   }
   if (navRow.length > 0) {
     keyboard.push(navRow);
@@ -156,14 +164,22 @@ function renderProductList(
   keyboard.push([
     {
       text: filter === "instock" ? "👁️ Show: All Products" : "🟢 Show: In-Stock Only",
-      callback_data: filter === "instock" ? "list:1:all" : "list:1:instock",
+      callback_data: filter === "instock" ? `list:1:all:${mode}` : `list:1:instock:${mode}`,
     },
   ]);
 
-  keyboard.push([
-    { text: "➕ Add Product", callback_data: "help:add" },
-    { text: "🛠️ Menu", callback_data: "help:menu" },
-  ]);
+  if (mode === "edit") {
+    keyboard.push([
+      { text: "👁️ Back to Normal List", callback_data: "list:1:all:view" },
+      { text: "🛠️ Menu", callback_data: "help:menu" },
+    ]);
+  } else {
+    keyboard.push([
+      { text: "✏️ Choose to Edit", callback_data: "list:1:all:edit" },
+      { text: "➕ Add Product", callback_data: "help:add" },
+      { text: "🛠️ Menu", callback_data: "help:menu" },
+    ]);
+  }
 
   return {
     text: text.trim(),
@@ -185,14 +201,29 @@ function renderProductDetail(product: Product): {
     ? `[\u200B](${product.imageUrl})`
     : "";
 
+  const specs = (product.duration || product.deliveryType || product.warranty)
+    ? {
+        duration: product.duration || "",
+        type: product.deliveryType || "",
+        warranty: product.warranty || "",
+      }
+    : parseProductDescription(product.description);
+
+  const specsText = (specs.duration || specs.type || specs.warranty)
+    ? `*Specs:*\n` +
+      (specs.duration ? `• ⏱️ Duration: \`${specs.duration}\`\n` : "") +
+      (specs.type ? `• 📦 Type: \`${specs.type}\`\n` : "") +
+      (specs.warranty ? `• 🛡️ Warranty: \`Warranty ${specs.warranty.replace(/^warranty\s*/i, "")}\`\n` : "")
+    : `*Description:* ${product.description || "_None_"}\n`;
+
   const text = `${imagePreview}${icon} *PRODUCT DETAILS*\n\n` +
     `*ID:* \`${product.id}\`\n` +
     `*Name:* ${product.name}\n` +
     `*Price:* ${formatDualPrice(product.price)}\n` +
     `*Stock:* ${stockStatus}\n` +
     `*Image:* ${product.imageUrl ? `[View Image](${product.imageUrl})` : "_None_"}\n` +
-    `*Description:* ${product.description || "_None_"}\n\n` +
-    `_Use buttons below to adjust stock or edit/delete._`;
+    specsText + `\n` +
+    `_Use buttons below to edit fields, adjust stock or delete._`;
 
   const keyboard = [
     [
@@ -201,7 +232,15 @@ function renderProductDetail(product: Product): {
       { text: "➕ Stock +1", callback_data: `stock:${product.id}:+` },
     ],
     [
-      { text: "✏️ Edit Syntax", callback_data: `edit:${product.id}` },
+      { text: "📦 Set Stock", callback_data: `input:stock:${product.id}` },
+      { text: "💰 Set Price", callback_data: `input:price:${product.id}` },
+    ],
+    [
+      { text: "🏷️ Rename", callback_data: `input:name:${product.id}` },
+      { text: "📝 Edit Specs", callback_data: `input:specs:${product.id}` },
+    ],
+    [
+      { text: "✏️ Full Edit", callback_data: `edit:${product.id}` },
       { text: "🗑️ Delete", callback_data: `del:${product.id}` },
     ],
     [
@@ -263,21 +302,25 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // 1. back:list, list:<page>:<filter>, or refresh:list:<page>:<filter>
+      // 1. back:list, list:<page>:<filter>:<mode>, or refresh:list:<page>:<filter>:<mode>
       if (cbData === "back:list" || cbData.startsWith("list:") || cbData.startsWith("refresh:list:")) {
         const parts = cbData.split(":");
         let pageStr = "1";
         let filterStr = "all";
+        let modeStr = "view";
 
         if (cbData.startsWith("refresh:list:")) {
           pageStr = parts[2] || "1";
           filterStr = parts[3] || "all";
+          modeStr = parts[4] || "view";
         } else if (cbData.startsWith("list:")) {
           pageStr = parts[1] || "1";
           filterStr = parts[2] || "all";
+          modeStr = parts[3] || "view";
         }
 
         const filter: "all" | "instock" = filterStr === "instock" ? "instock" : "all";
+        const mode: "view" | "edit" = modeStr === "edit" ? "edit" : "view";
         const page = Math.max(1, parseInt(pageStr, 10) || 1);
         let allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
 
@@ -289,7 +332,7 @@ export async function POST(request: Request) {
         const currentPage = Math.min(page, totalPages);
         const pageItems = allProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-        const rendered = renderProductList(pageItems, currentPage, totalPages, filter);
+        const rendered = renderProductList(pageItems, currentPage, totalPages, filter, mode);
         await bot.api.editMessageText(cbChatId, cbMessageId, rendered.text, {
           parse_mode: "Markdown",
           reply_markup: rendered.reply_markup,
@@ -421,6 +464,40 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
+      // 4.1 input:stock:<id>, input:price:<id>, input:name:<id>, input:specs:<id> -> ForceReply prompt
+      if (cbData.startsWith("input:")) {
+        const [, field, prodId] = cbData.split(":");
+        const found = await db.select().from(products).where(eq(products.id, prodId)).limit(1);
+        if (found.length === 0) {
+          await bot.api.answerCallbackQuery(cbId, { text: "Product not found.", show_alert: true });
+          return NextResponse.json({ ok: true });
+        }
+        const p = found[0];
+        const fieldLabels: Record<string, string> = {
+          stock: "New Stock Number (e.g. 25)",
+          price: "New Price in VND (e.g. 150000)",
+          name: "New Product Name",
+          specs: "Duration - Type - Warranty (e.g. 10 months - Link - Warranty 24H)",
+        };
+        const promptLabel = fieldLabels[field] || field;
+
+        await bot.api.sendMessage(
+          cbChatId,
+          `✏️ *Edit ${field.toUpperCase()} for "${p.name}"*\n` +
+            `[ID: \`${p.id}\` | Current: *${field === "price" ? formatDualPrice(p.price) : field === "stock" ? p.stock : field === "specs" ? (p.description || "_None_") : p.name}*]\n\n` +
+            `👉 *Reply to this message with ${promptLabel}:*`,
+          {
+            parse_mode: "Markdown",
+            reply_markup: {
+              force_reply: true,
+              selective: true,
+            },
+          }
+        );
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
       // 5. del:<id> -> Show confirmation keyboard
       if (cbData.startsWith("del:") && !cbData.startsWith("del:confirm:")) {
         const prodId = cbData.split(":")[1];
@@ -514,6 +591,127 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json({ ok: true });
+    }
+
+    // 0. Reply-to-message prompt handler (Interactive ForceReply for stock, price, name, specs)
+    const replyTo = messageObj?.reply_to_message;
+    if (replyTo && replyTo.text) {
+      const parentText: string = replyTo.text;
+      const idMatch = parentText.match(/\[ID:\s*`?([a-zA-Z0-9_-]+)`?/i) || parentText.match(/ID:\s*`?([a-zA-Z0-9_-]+)`?/i);
+      const isStockPrompt = parentText.includes("Edit STOCK") || parentText.includes("Stock Number");
+      const isPricePrompt = parentText.includes("Edit PRICE") || parentText.includes("Price in VND");
+      const isNamePrompt = parentText.includes("Edit NAME") || parentText.includes("Product Name");
+      const isSpecsPrompt = parentText.includes("Edit SPECS") || parentText.includes("Duration - Type - Warranty");
+
+      if (idMatch && (isStockPrompt || isPricePrompt || isNamePrompt || isSpecsPrompt)) {
+        const prodId = idMatch[1];
+        const found = await db.select().from(products).where(eq(products.id, prodId)).limit(1);
+
+        if (found.length === 0) {
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `⚠️ Product \`${prodId}\` not found.`, { parse_mode: "Markdown" });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        const p = found[0];
+
+        if (isSpecsPrompt) {
+          const rawSpecInput = rawText.trim();
+          const parsed = parseProductDescription(rawSpecInput);
+          const newDesc = formatProductDescription(parsed) || rawSpecInput;
+          const dur = parsed.duration || "";
+          const dt = parsed.type || "";
+          const war = parsed.warranty || "";
+
+          await db.update(products).set({
+            duration: dur,
+            deliveryType: dt,
+            warranty: war,
+            description: newDesc,
+          }).where(eq(products.id, prodId));
+
+          const updated = {
+            ...p,
+            duration: dur,
+            deliveryType: dt,
+            warranty: war,
+            description: newDesc,
+          };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Specs & Warranty Updated!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isStockPrompt) {
+          const newStock = parseInt(rawText.trim(), 10);
+          if (isNaN(newStock) || newStock < 0) {
+            if (bot && chatId) {
+              await bot.api.sendMessage(chatId, `⚠️ Please enter a valid non-negative number for stock (e.g. \`15\`).`, { parse_mode: "Markdown" });
+            }
+            return NextResponse.json({ ok: true });
+          }
+          await db.update(products).set({ stock: newStock }).where(eq(products.id, prodId));
+          const updated = { ...p, stock: newStock };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Stock Updated to ${newStock}!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isPricePrompt) {
+          const newPrice = Number(rawText.trim().replace(/[^0-9.]/g, ""));
+          if (isNaN(newPrice) || newPrice < 0) {
+            if (bot && chatId) {
+              await bot.api.sendMessage(chatId, `⚠️ Please enter a valid number for price (e.g. \`120000\`).`, { parse_mode: "Markdown" });
+            }
+            return NextResponse.json({ ok: true });
+          }
+          await db.update(products).set({ price: newPrice }).where(eq(products.id, prodId));
+          const updated = { ...p, price: newPrice };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Price Updated to ${formatDualPrice(newPrice)}!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isNamePrompt) {
+          const newName = rawText.trim();
+          if (!newName) {
+            if (bot && chatId) {
+              await bot.api.sendMessage(chatId, `⚠️ Name cannot be empty.`, { parse_mode: "Markdown" });
+            }
+            return NextResponse.json({ ok: true });
+          }
+          await db.update(products).set({ name: newName }).where(eq(products.id, prodId));
+          const updated = { ...p, name: newName };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Product Renamed to "${newName}"!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+      }
     }
 
     const firstWord = rawText.split(/\s+/)[0];
@@ -682,10 +880,14 @@ export async function POST(request: Request) {
 
       const stock = stockStr !== undefined && !isNaN(Number(stockStr)) ? Math.max(0, parseInt(stockStr, 10)) : 0;
       const newId = crypto.randomUUID();
+      const parsedDesc = parseProductDescription(description);
 
       await db.insert(products).values({
         id: newId,
         name,
+        duration: parsedDesc.duration || "",
+        deliveryType: parsedDesc.type || "",
+        warranty: parsedDesc.warranty || "",
         price,
         stock,
         imageUrl,
@@ -709,7 +911,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 6. /editproduct <id> | <name> | <price> | <stock> | [imageUrl] | [description]
+    // 6. /editproduct [id] | [name] | [price] | [stock] | [imageUrl] | [description]
     if (command === "/editproduct") {
       const parts = restText.split("|").map((p: string) => p.trim());
       const prodId = parts[0];
@@ -719,13 +921,17 @@ export async function POST(request: Request) {
       const imageUrl = parts[4];
       const description = parts[5];
 
+      // If no args provided, show product list for user to choose
       if (!prodId) {
         if (bot && chatId) {
-          await bot.api.sendMessage(
-            chatId,
-            `ℹ️ *Usage:* \`/editproduct <id> | <name> | <price> | <stock> | [imageUrl] | [description]\``,
-            { parse_mode: "Markdown" }
-          );
+          const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+          const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
+          const pageItems = allProducts.slice(0, PAGE_SIZE);
+          const rendered = renderProductList(pageItems, 1, totalPages, "all", "edit");
+          await bot.api.sendMessage(chatId, rendered.text, {
+            parse_mode: "Markdown",
+            reply_markup: rendered.reply_markup,
+          });
         }
         return NextResponse.json({ ok: true });
       }
@@ -750,10 +956,18 @@ export async function POST(request: Request) {
       const newImageUrl = imageUrl !== undefined ? imageUrl : existing.imageUrl;
       const newDescription = description !== undefined ? description : existing.description;
 
+      const parsedAttrs = description !== undefined ? parseProductDescription(description) : null;
+      const newDuration = parsedAttrs ? (parsedAttrs.duration || "") : existing.duration;
+      const newDeliveryType = parsedAttrs ? (parsedAttrs.type || "") : existing.deliveryType;
+      const newWarranty = parsedAttrs ? (parsedAttrs.warranty || "") : existing.warranty;
+
       await db
         .update(products)
         .set({
           name: newName,
+          duration: newDuration,
+          deliveryType: newDeliveryType,
+          warranty: newWarranty,
           price: newPrice,
           stock: newStock,
           imageUrl: newImageUrl,

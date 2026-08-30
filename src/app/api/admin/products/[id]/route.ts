@@ -8,7 +8,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     await initDb();
     const { id } = await params;
     const body = await request.json();
-    const { name, description, price, stock, imageUrl } = body;
+    const { name, duration, deliveryType, warranty, description, price, stock, imageUrl } = body;
 
     if (!name || price === undefined || isNaN(Number(price))) {
       return NextResponse.json({ error: "Name and valid price are required" }, { status: 400 });
@@ -16,10 +16,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const updated = {
       name: String(name).trim(),
-      description: description ? String(description).trim() : "",
+      duration: duration !== undefined ? String(duration).trim() : "",
+      deliveryType: deliveryType !== undefined ? String(deliveryType).trim() : "",
+      warranty: warranty !== undefined ? String(warranty).trim() : "",
+      description: description !== undefined ? String(description).trim() : "",
       price: Number(price),
       stock: stock !== undefined && !isNaN(Number(stock)) ? Math.max(0, Number(stock)) : 0,
-      imageUrl: imageUrl ? String(imageUrl).trim() : "",
+      imageUrl: imageUrl !== undefined ? String(imageUrl).trim() : "",
     };
 
     await db.update(products).set(updated).where(eq(products.id, id));

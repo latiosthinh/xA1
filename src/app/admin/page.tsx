@@ -21,11 +21,15 @@ import {
 import Link from "next/link";
 import { formatDualPrice } from "@/lib/currency";
 import { getProductIconUrl } from "@/lib/product-icons";
+import { parseProductDescription, formatProductDescription } from "@/lib/description";
 
 interface Product {
   id: string;
   name: string;
-  description: string;
+  duration?: string;
+  deliveryType?: string;
+  warranty?: string;
+  description?: string;
   price: number;
   stock: number;
   imageUrl: string;
@@ -41,6 +45,9 @@ export default function AdminDashboardPage() {
 
   // Form State
   const [name, setName] = useState("");
+  const [duration, setDuration] = useState("");
+  const [deliveryType, setDeliveryType] = useState("Account");
+  const [warranty, setWarranty] = useState("7 days");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("10");
@@ -100,6 +107,9 @@ export default function AdminDashboardPage() {
   const handleOpenAdd = () => {
     setEditingProduct(null);
     setName("");
+    setDuration("");
+    setDeliveryType("Account");
+    setWarranty("7 days");
     setDescription("");
     setPrice("");
     setStock("10");
@@ -111,6 +121,21 @@ export default function AdminDashboardPage() {
   const handleOpenEdit = (p: Product) => {
     setEditingProduct(p);
     setName(p.name);
+    const dur = p.duration || "";
+    const dt = p.deliveryType || "";
+    const war = p.warranty || "";
+
+    if (dur || dt || war) {
+      setDuration(dur);
+      setDeliveryType(dt || "Account");
+      setWarranty(war);
+    } else {
+      const parsed = parseProductDescription(p.description);
+      setDuration(parsed.duration || "");
+      setDeliveryType(parsed.type || "Account");
+      setWarranty(parsed.warranty || "");
+    }
+
     setDescription(p.description || "");
     setPrice(String(p.price));
     setStock(String(p.stock ?? 0));
@@ -130,9 +155,16 @@ export default function AdminDashboardPage() {
     setError("");
 
     try {
+      const formattedDesc = duration || deliveryType || warranty
+        ? formatProductDescription({ duration, type: deliveryType, warranty })
+        : description.trim();
+
       const payload = {
         name: name.trim(),
-        description: description.trim(),
+        duration: duration.trim(),
+        deliveryType: deliveryType.trim(),
+        warranty: warranty.trim(),
+        description: formattedDesc,
         price: Number(price),
         stock: isNaN(Number(stock)) ? 0 : Number(stock),
         imageUrl: imageUrl.trim(),
@@ -191,7 +223,10 @@ export default function AdminDashboardPage() {
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase())
+      (p.description || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.duration || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.deliveryType || "").toLowerCase().includes(search.toLowerCase()) ||
+      (p.warranty || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -321,9 +356,26 @@ export default function AdminDashboardPage() {
                         STOCK: {product.stock ?? 0}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-[#0e111f] p-2 border border-slate-800">
-                      {product.description || "No description provided."}
-                    </p>
+                    {/* Badges / Description */}
+                    {(() => {
+                      const dur = product.duration;
+                      const dt = product.deliveryType;
+                      const war = product.warranty;
+                      if (dur || dt || war) {
+                        return (
+                          <div className="mt-2 flex flex-wrap gap-1 text-[9px] font-pixel">
+                            {dur && <span className="bg-amber-950/60 border border-amber-600/60 text-amber-300 px-1 py-0.5">⏳ {dur}</span>}
+                            {dt && <span className="bg-sky-950/60 border border-sky-600/60 text-sky-300 px-1 py-0.5">📦 {dt}</span>}
+                            {war && <span className="bg-emerald-950/60 border border-emerald-600/60 text-emerald-300 px-1 py-0.5">🛡️ {war.startsWith("Warranty") ? war : `Warranty ${war}`}</span>}
+                          </div>
+                        );
+                      }
+                      return (
+                        <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-[#0e111f] p-2 border border-slate-800">
+                          {product.description || "No description provided."}
+                        </p>
+                      );
+                    })()}
                   </div>
 
                   <div className="mt-4 pt-3 border-t-2 border-slate-800 flex items-center justify-end gap-2">
@@ -509,17 +561,56 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <div>
-                <label className="block font-pixel text-[9px] uppercase text-slate-400 mb-1.5">
-                  Description
+              {/* Structured Attributes */}
+              <div className="bg-[#121524] p-3 border-2 border-slate-800 space-y-2.5">
+                <label className="block font-pixel text-[9px] uppercase text-emerald-400">
+                  Item Specs & Warranty (Auto-formats Description)
                 </label>
-                <textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Package details, server, delivery format..."
-                  className="w-full bg-[#0d0f18] border-2 border-slate-700 px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600 resize-none transition"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div>
+                    <label className="block font-pixel text-[8px] uppercase text-slate-400 mb-1">
+                      1. Duration
+                    </label>
+                    <input
+                      type="text"
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                      placeholder="e.g. 10 months, 1 year"
+                      className="w-full bg-[#0d0f18] border-2 border-slate-700 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-pixel text-[8px] uppercase text-slate-400 mb-1">
+                      2. Delivery Type
+                    </label>
+                    <input
+                      type="text"
+                      value={deliveryType}
+                      onChange={(e) => setDeliveryType(e.target.value)}
+                      placeholder="e.g. Link, Account, Key"
+                      className="w-full bg-[#0d0f18] border-2 border-slate-700 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-pixel text-[8px] uppercase text-slate-400 mb-1">
+                      3. Warranty
+                    </label>
+                    <input
+                      type="text"
+                      value={warranty}
+                      onChange={(e) => setWarranty(e.target.value)}
+                      placeholder="e.g. 24H, 7 days, 1 month"
+                      className="w-full bg-[#0d0f18] border-2 border-slate-700 px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-400 placeholder:text-slate-600"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-1 text-[11px] text-slate-400 font-mono flex items-center gap-1.5">
+                  <span className="text-slate-500 font-pixel text-[8px]">PREVIEW:</span>
+                  <span className="text-amber-300">
+                    {formatProductDescription({ duration, type: deliveryType, warranty }) || "_None_"}
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t-2 border-slate-800">
