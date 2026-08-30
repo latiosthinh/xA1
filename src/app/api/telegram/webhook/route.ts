@@ -106,7 +106,12 @@ export async function POST(request: Request) {
     await initDb();
 
     const rawAdminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID || "";
-    const adminChatId = rawAdminChatId.trim().replace(/^["']|["']$/g, "");
+    const adminChatIds = rawAdminChatId
+      .split(",")
+      .map((id) => id.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+
+    const isAuthorized = (id: string) => adminChatIds.length > 0 && adminChatIds.includes(id);
 
     // --- HANDLE CALLBACK QUERIES (INLINE KEYBOARD ACTIONS) ---
     if (update?.callback_query) {
@@ -117,10 +122,10 @@ export async function POST(request: Request) {
       const cbId = cb?.id;
 
       // Re-authorize chatId against TELEGRAM_ADMIN_CHAT_ID
-      if (!adminChatId || cbChatId !== adminChatId) {
+      if (!isAuthorized(cbChatId)) {
         if (bot && cbId) {
           await bot.api.answerCallbackQuery(cbId, {
-            text: `⛔ Unauthorized. Your ID: ${cbChatId} (Server expected: ${adminChatId || "NOT SET"})`,
+            text: `⛔ Unauthorized. Your ID: ${cbChatId} (Allowed: ${adminChatIds.join(", ") || "NONE"})`,
             show_alert: true,
           });
         }
@@ -271,13 +276,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // Sender authorization check against TELEGRAM_ADMIN_CHAT_ID
-    if (!adminChatId || chatId !== adminChatId) {
-      console.warn("Unauthorized Telegram message from chatId:", chatId, "expected:", adminChatId);
+    // Sender authorization check against TELEGRAM_ADMIN_CHAT_ID (supports comma-separated list)
+    if (!isAuthorized(chatId)) {
+      console.warn("Unauthorized Telegram message from chatId:", chatId, "allowed:", adminChatIds);
       if (bot && chatId) {
         await bot.api.sendMessage(
           chatId,
-          `⛔ *Access Denied.*\n\n• Your Chat ID: \`${chatId}\`\n• Server has \`TELEGRAM_ADMIN_CHAT_ID\`: \`${adminChatId || "EMPTY / NOT SET"}\`\n\nEnsure \`TELEGRAM_ADMIN_CHAT_ID\` is checked for **Production** environment in Vercel settings, then click **Redeploy**.`,
+          `⛔ *Access Denied.*\n\n• Your Chat ID: \`${chatId}\`\n• Configured \`TELEGRAM_ADMIN_CHAT_ID\`: \`${adminChatIds.join(", ") || "EMPTY / NOT SET"}\`\n\nAdd your Chat ID to \`TELEGRAM_ADMIN_CHAT_ID\` in Vercel (comma-separated, e.g. \`${adminChatIds.length > 0 ? adminChatIds.join(",") + "," : ""}${chatId}\`) and redeploy.`,
           { parse_mode: "Markdown" }
         );
       }

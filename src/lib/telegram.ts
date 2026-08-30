@@ -2,7 +2,11 @@ import { Bot } from "grammy";
 import { formatDualPrice, formatVND, formatUSD } from "./currency";
 
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
-const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+const rawAdminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID || "";
+const adminChatIds = rawAdminChatId
+  .split(",")
+  .map((id) => id.trim().replace(/^["']|["']$/g, ""))
+  .filter(Boolean);
 
 export const bot = botToken && !botToken.includes("FakeToken") ? new Bot(botToken) : null;
 
@@ -13,7 +17,7 @@ export async function sendTelegramOrderAlert(order: {
   paymentMethod: string;
   itemsJson: string;
 }) {
-  if (!bot || !adminChatId) {
+  if (!bot || adminChatIds.length === 0) {
     console.log("[Telegram Mock Alert] Order notification:", order.publicMemo);
     return;
   }
@@ -42,7 +46,13 @@ export async function sendTelegramOrderAlert(order: {
       `📢 *To broadcast globally to all visitors:*\n` +
       `\`/send <Announcement Message>\``;
 
-    await bot.api.sendMessage(adminChatId, message, { parse_mode: "Markdown" });
+    await Promise.all(
+      adminChatIds.map((chatId) =>
+        bot.api.sendMessage(chatId, message, { parse_mode: "Markdown" }).catch((err) =>
+          console.error("Failed to send Telegram alert to:", chatId, err)
+        )
+      )
+    );
   } catch (error) {
     console.error("Failed to send Telegram alert:", error);
   }
