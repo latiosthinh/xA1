@@ -9,8 +9,8 @@
 ## Current Position
 
 - **Phase**: 04-telegram-inventory-and-product-management
-- **Plan**: 04-01 Completed
-- **Status**: In Progress
+- **Plan**: 04-02 Completed
+- **Status**: Completed
 - **Progress**: [====================] 100%
 
 ## Performance Metrics
@@ -18,7 +18,7 @@
 | Metric | Target | Current |
 |--------|--------|---------|
 | Requirement Coverage | 100% | 100% |
-| Phases Complete | 3/4 | 3/4 |
+| Phases Complete | 4/4 | 4/4 |
 | Active Blockers | 0 | 0 |
 
 ## Accumulated Context
@@ -29,6 +29,7 @@
 - **Adaptive Short Polling + LocalStorage Tokens**: Dual token scheme (`public_memo` + `client_token`) avoids IDOR while providing reliable serverless order notification polling.
 - **Telegram `grammY` Webhook**: Direct `/reply <OrderID> <message>` bridge from admin chat to web store.
 - **Auto Stock Deduction**: `/send <OrderID> 1` updates order to COMPLETED, decreases inventory stocks in DB with 0-floor clamping, and replies to admin with updated quantities.
+- **Telegram In-Chat CRUD**: Full product management (`/products`, `/product`, `/addproduct`, `/setstock`, `/editproduct`, `/delproduct`, `/help`) with inline keyboard UI (pagination, stock +/- buttons, delete confirmation).
 
 ### Blockers
 None.
