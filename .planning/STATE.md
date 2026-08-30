@@ -8,17 +8,17 @@
 
 ## Current Position
 
-- **Phase**: All Phases Complete (1, 2, 3)
-- **Plan**: Complete
-- **Status**: Milestone Complete
+- **Phase**: 04-telegram-inventory-and-product-management
+- **Plan**: 04-01 Completed
+- **Status**: In Progress
 - **Progress**: [====================] 100%
 
 ## Performance Metrics
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Requirement Coverage | 100% (19/19) | 100% |
-| Phases Complete | 3/3 | 3/3 |
+| Requirement Coverage | 100% | 100% |
+| Phases Complete | 3/4 | 3/4 |
 | Active Blockers | 0 | 0 |
 
 ## Accumulated Context
@@ -28,6 +28,7 @@
 - **Turso LibSQL**: Serverless SQLite for zero-maintenance persistent catalog and order storage.
 - **Adaptive Short Polling + LocalStorage Tokens**: Dual token scheme (`public_memo` + `client_token`) avoids IDOR while providing reliable serverless order notification polling.
 - **Telegram `grammY` Webhook**: Direct `/reply <OrderID> <message>` bridge from admin chat to web store.
+- **Auto Stock Deduction**: `/send <OrderID> 1` updates order to COMPLETED, decreases inventory stocks in DB with 0-floor clamping, and replies to admin with updated quantities.
 
 ### Blockers
 None.
