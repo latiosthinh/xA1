@@ -105,21 +105,22 @@ export async function POST(request: Request) {
 
     await initDb();
 
-    const adminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+    const rawAdminChatId = process.env.TELEGRAM_ADMIN_CHAT_ID || "";
+    const adminChatId = rawAdminChatId.trim().replace(/^["']|["']$/g, "");
 
     // --- HANDLE CALLBACK QUERIES (INLINE KEYBOARD ACTIONS) ---
     if (update?.callback_query) {
       const cb = update.callback_query;
-      const cbChatId = cb?.message?.chat?.id;
+      const cbChatId = String(cb?.message?.chat?.id || "").trim();
       const cbMessageId = cb?.message?.message_id;
       const cbData = (cb?.data || "").trim();
       const cbId = cb?.id;
 
       // Re-authorize chatId against TELEGRAM_ADMIN_CHAT_ID
-      if (!adminChatId || String(cbChatId) !== String(adminChatId)) {
+      if (!adminChatId || cbChatId !== adminChatId) {
         if (bot && cbId) {
           await bot.api.answerCallbackQuery(cbId, {
-            text: `⛔ Unauthorized. Your Chat ID is ${cbChatId}. Set TELEGRAM_ADMIN_CHAT_ID=${cbChatId}`,
+            text: `⛔ Unauthorized. Your ID: ${cbChatId} (Server expected: ${adminChatId || "NOT SET"})`,
             show_alert: true,
           });
         }
@@ -264,19 +265,19 @@ export async function POST(request: Request) {
     // --- HANDLE TEXT MESSAGES ---
     const messageObj = update?.message || update?.channel_post;
     const rawText = (messageObj?.text || "").trim();
-    const chatId = messageObj?.chat?.id;
+    const chatId = String(messageObj?.chat?.id || "").trim();
 
     if (!rawText) {
       return NextResponse.json({ ok: true });
     }
 
     // Sender authorization check against TELEGRAM_ADMIN_CHAT_ID
-    if (!adminChatId || String(chatId) !== String(adminChatId)) {
+    if (!adminChatId || chatId !== adminChatId) {
       console.warn("Unauthorized Telegram message from chatId:", chatId, "expected:", adminChatId);
       if (bot && chatId) {
         await bot.api.sendMessage(
           chatId,
-          `⛔ *Access Denied.*\n\nYour Telegram Chat ID is: \`${chatId}\`\n\nTo grant access, set this in your Vercel Environment Variables (or \`.env\`):\n\`TELEGRAM_ADMIN_CHAT_ID=${chatId}\`\nthen redeploy.`,
+          `⛔ *Access Denied.*\n\n• Your Chat ID: \`${chatId}\`\n• Server has \`TELEGRAM_ADMIN_CHAT_ID\`: \`${adminChatId || "EMPTY / NOT SET"}\`\n\nEnsure \`TELEGRAM_ADMIN_CHAT_ID\` is checked for **Production** environment in Vercel settings, then click **Redeploy**.`,
           { parse_mode: "Markdown" }
         );
       }
