@@ -119,7 +119,7 @@ export async function POST(request: Request) {
       if (!adminChatId || String(cbChatId) !== String(adminChatId)) {
         if (bot && cbId) {
           await bot.api.answerCallbackQuery(cbId, {
-            text: "⛔ Unauthorized action.",
+            text: `⛔ Unauthorized. Your Chat ID is ${cbChatId}. Set TELEGRAM_ADMIN_CHAT_ID=${cbChatId}`,
             show_alert: true,
           });
         }
@@ -271,12 +271,14 @@ export async function POST(request: Request) {
     }
 
     // Sender authorization check against TELEGRAM_ADMIN_CHAT_ID
-    if (adminChatId && String(chatId) !== String(adminChatId)) {
-      console.warn("Unauthorized Telegram message from chatId:", chatId);
+    if (!adminChatId || String(chatId) !== String(adminChatId)) {
+      console.warn("Unauthorized Telegram message from chatId:", chatId, "expected:", adminChatId);
       if (bot && chatId) {
-        await bot.api.sendMessage(chatId, "⛔ *Access Denied.* You are not authorized to use this bot.", {
-          parse_mode: "Markdown",
-        });
+        await bot.api.sendMessage(
+          chatId,
+          `⛔ *Access Denied.*\n\nYour Telegram Chat ID is: \`${chatId}\`\n\nTo grant access, set this in your Vercel Environment Variables (or \`.env\`):\n\`TELEGRAM_ADMIN_CHAT_ID=${chatId}\`\nthen redeploy.`,
+          { parse_mode: "Markdown" }
+        );
       }
       return NextResponse.json({ ok: true });
     }
