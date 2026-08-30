@@ -10,21 +10,47 @@ const PAGE_SIZE = 10;
 
 function getProductIcon(name: string): string {
   const lower = (name || "").toLowerCase();
-  if (lower.includes("claude")) return "🤖";
+
+  // AI & LLM Tools
+  if (lower.includes("claude") || lower.includes("anthropic")) return "🧡";
   if (lower.includes("cursor")) return "⚡";
-  if (lower.includes("coursera") || lower.includes("udemy") || lower.includes("learn") || lower.includes("edu")) return "🎓";
-  if (lower.includes("capcut") || lower.includes("video") || lower.includes("premiere") || lower.includes("edit")) return "🎬";
-  if (lower.includes("chatgpt") || lower.includes("gpt") || lower.includes("openai")) return "💬";
-  if (lower.includes("netflix") || lower.includes("youtube") || lower.includes("disney") || lower.includes("hulu") || lower.includes("film")) return "🍿";
-  if (lower.includes("spotify") || lower.includes("music") || lower.includes("sound") || lower.includes("apple music")) return "🎵";
-  if (lower.includes("steam") || lower.includes("game") || lower.includes("play") || lower.includes("playstation") || lower.includes("xbox")) return "🎮";
-  if (lower.includes("vpn") || lower.includes("key") || lower.includes("license") || lower.includes("nord")) return "🔑";
-  if (lower.includes("github") || lower.includes("copilot") || lower.includes("gitlab")) return "🐙";
-  if (lower.includes("canva") || lower.includes("design") || lower.includes("adobe") || lower.includes("figma") || lower.includes("ps")) return "🎨";
-  if (lower.includes("win") || lower.includes("office") || lower.includes("microsoft") || lower.includes("365")) return "🪟";
-  if (lower.includes("telegram") || lower.includes("tele") || lower.includes("tg")) return "✈️";
+  if (lower.includes("gemini") || lower.includes("google")) return "♊";
+  if (lower.includes("chatgpt") || lower.includes("openai") || lower.includes("gpt") || lower.includes("sora")) return "🟢";
+  if (lower.includes("kiro") || lower.includes("midjourney") || lower.includes("krea") || lower.includes("runway") || lower.includes("flux")) return "✨";
+  if (lower.includes("copilot") || lower.includes("github") || lower.includes("gitlab")) return "🐙";
+
+  // Video & Audio Streaming
+  if (lower.includes("capcut") || lower.includes("premiere") || lower.includes("filmora") || lower.includes("video")) return "✂️";
+  if (lower.includes("youtube")) return "▶️";
+  if (lower.includes("netflix")) return "🍿";
+  if (lower.includes("disney") || lower.includes("hulu") || lower.includes("hbo") || lower.includes("film")) return "📺";
+  if (lower.includes("spotify") || lower.includes("apple music") || lower.includes("deezer") || lower.includes("sound") || lower.includes("music")) return "🎧";
+
+  // Education & Language Learning
+  if (lower.includes("coursera") || lower.includes("udemy") || lower.includes("datacamp") || lower.includes("pluralsight") || lower.includes("edu") || lower.includes("learn")) return "🎓";
+  if (lower.includes("duolingo") || lower.includes("elsa") || lower.includes("speak") || lower.includes("ielts")) return "🦉";
+
+  // Design & Creative
+  if (lower.includes("canva") || lower.includes("adobe") || lower.includes("photoshop") || lower.includes("figma") || lower.includes("design") || lower.includes("illustrator")) return "🎨";
+
+  // Productivity, Notes & Office
+  if (lower.includes("notion") || lower.includes("grammarly") || lower.includes("quillbot")) return "📝";
+  if (lower.includes("office") || lower.includes("microsoft") || lower.includes("365") || lower.includes("win") || lower.includes("excel")) return "🪟";
+  if (lower.includes("drive") || lower.includes("cloud") || lower.includes("dropbox") || lower.includes("icloud") || lower.includes("storage")) return "☁️";
+  if (lower.includes("zoom") || lower.includes("meet")) return "📹";
+
+  // Social & Gaming
+  if (lower.includes("telegram") || lower.includes("tele") || lower.includes("tg")) return "⭐";
   if (lower.includes("discord") || lower.includes("nitro")) return "🚀";
-  if (lower.includes("drive") || lower.includes("cloud") || lower.includes("storage")) return "☁️";
+  if (lower.includes("steam") || lower.includes("game") || lower.includes("playstation") || lower.includes("xbox") || lower.includes("nintendo")) return "🎮";
+
+  // Security, VPN & Keys
+  if (lower.includes("vpn") || lower.includes("nord") || lower.includes("surfshark") || lower.includes("expressvpn") || lower.includes("warp") || lower.includes("1.1.1.1")) return "🛡️";
+  if (lower.includes("key") || lower.includes("license") || lower.includes("account") || lower.includes("acc")) return "🔑";
+
+  // Finance & Trading
+  if (lower.includes("tradingview") || lower.includes("crypto") || lower.includes("binance")) return "📈";
+
   return "📦";
 }
 
