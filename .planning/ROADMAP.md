@@ -6,9 +6,10 @@ Deliver a lightweight e-commerce storefront with Turso SQLite persistence, multi
 
 ## Phases
 
-- [ ] **Phase 1: Foundation, Admin Auth & Product Catalog** - Project foundation, Turso SQLite schema, secure admin auth, and product CRUD management.
-- [ ] **Phase 2: Storefront, Cart & Multi-Payment QR Checkout** - Public product catalog, client-side cart, order creation, and MoMo/Binance QR checkout with copy utilities.
-- [ ] **Phase 3: Telegram 2-Way Bot Bridge & Realtime Ephemeral Notification** - Telegram bot alert dispatch, `/reply` webhook ingestion, client polling, and bell icon ephemeral delivery modal.
+- [x] **Phase 1: Foundation, Admin Auth & Product Catalog** - Project foundation, Turso SQLite schema, secure admin auth, and product CRUD management.
+- [x] **Phase 2: Storefront, Cart & Multi-Payment QR Checkout** - Public product catalog, client-side cart, order creation, and MoMo/Binance QR checkout with copy utilities.
+- [x] **Phase 3: Telegram 2-Way Bot Bridge & Realtime Ephemeral Notification** - Telegram bot alert dispatch, `/reply` webhook ingestion, client polling, and bell icon ephemeral delivery modal.
+- [x] **Phase 4: Telegram Inventory Sync & Product Management** - Auto-deduct stock on Telegram payment approval, plus full Telegram bot commands for product and inventory CRUD.
 
 ## Phase Details
 
@@ -21,7 +22,7 @@ Deliver a lightweight e-commerce storefront with Turso SQLite persistence, multi
   2. Admin can create, edit, view, and delete products (name, description, price, image URL) with updates immediately reflected in Turso SQLite.
   3. Unauthenticated users attempting to access `/admin` or protected admin APIs are rejected and redirected to the login page.
   4. Admin can log out, clearing the session cookie and revoking dashboard access.
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 ### Phase 2: Storefront, Cart & Multi-Payment QR Checkout
@@ -33,7 +34,7 @@ Deliver a lightweight e-commerce storefront with Turso SQLite persistence, multi
   2. Customer can initiate checkout to generate a unique short Order ID and store a client authorization token in `localStorage`.
   3. Checkout page displays MoMo QR code, Binance Pay ID, and 1-click copy buttons for exact amount and order memo.
   4. Customer clicking "Done" marks the order as pending confirmation and receives clear 5-10 minute fulfillment instructions.
-**Plans**: TBD
+**Plans**: 1 plan
 **UI hint**: yes
 
 ### Phase 3: Telegram 2-Way Bot Bridge & Realtime Ephemeral Notification
@@ -45,13 +46,31 @@ Deliver a lightweight e-commerce storefront with Turso SQLite persistence, multi
   2. Admin can send `/reply <OrderID> <message>` in Telegram, which the webhook validates and persists into Turso.
   3. Buyer's browser polls order status using `localStorage` tokens and rings/updates the header notification bell with an unread badge when admin replies.
   4. Clicking the bell displays the admin message in an ephemeral modal with prominent data loss warnings, and closing it marks the message acknowledged.
-**Plans**: TBD
+**Plans**: 1 plan
+**UI hint**: yes
+
+### Phase 4: Telegram Inventory Sync & Product Management
+**Goal**: Automatic stock deduction on payment confirmation, and in-chat Telegram bot commands to list, view, add, update stock, edit, and delete products.
+**Depends on**: Phase 3
+**Requirements**: BOT-INV-01, BOT-PROD-01, BOT-PROD-02, BOT-PROD-03, BOT-PROD-04, BOT-PROD-05
+**Success Criteria** (what must be TRUE):
+  1. Approving payment in Telegram (`/send <OrderID> 1`) deducts stock from Turso DB for each ordered item without going below 0.
+  2. Admin can send `/products` or `/list` to view all products and stock levels.
+  3. Admin can send `/product <id>` to inspect details of a specific product.
+  4. Admin can send `/setstock <id> <stock>` to immediately adjust inventory.
+  5. Admin can send `/addproduct`, `/editproduct`, and `/delproduct` to perform full product CRUD directly in Telegram.
+  6. Product list and product detail render with inline keyboard buttons (pagination, stock +/−, edit, delete) that update the message in place.
+**Plans**: 2 plans
+Plans:
+- [x] 04-01-PLAN.md — Automated stock deduction on payment approval with inventory summary feedback
+- [x] 04-02-PLAN.md — Full in-chat Telegram product and inventory CRUD management commands
 **UI hint**: yes
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
+|---|---|---|---|
 | 1. Foundation, Admin Auth & Product Catalog | 1/1 | Complete | 2026-08-25 |
 | 2. Storefront, Cart & Multi-Payment QR Checkout | 1/1 | Complete | 2026-08-25 |
 | 3. Telegram 2-Way Bot Bridge & Realtime Ephemeral Notification | 1/1 | Complete | 2026-08-25 |
+| 4. Telegram Inventory Sync & Product Management | 2/2 | Complete | 2026-08-30 |
