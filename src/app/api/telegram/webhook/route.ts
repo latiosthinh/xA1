@@ -100,20 +100,28 @@ function renderHelpMenu(): {
 function renderProductList(
   items: Product[],
   page: number,
-  totalPages: number
+  totalPages: number,
+  filter: "all" | "instock" = "all"
 ): { text: string; reply_markup: { inline_keyboard: Array<Array<{ text: string; callback_data: string }>> } } {
+  const filterTitle = filter === "instock" ? " (In-Stock Only)" : "";
   if (items.length === 0) {
     return {
-      text: "📦 *Product Catalog is empty.*\nUse `/addproduct <name> | <price> | <stock> | [imageUrl] | [description]` to add one.",
+      text: `📦 *Product Catalog is empty${filter === "instock" ? " (No in-stock products)" : ""}.*\nUse \`/addproduct <name> | <price> | <stock> | [imageUrl] | [description]\` to add one.`,
       reply_markup: {
         inline_keyboard: [
-          [{ text: "➕ Add Product", callback_data: "help:add" }],
+          [
+            {
+              text: filter === "instock" ? "👁️ View All" : "🟢 In-Stock Only",
+              callback_data: filter === "instock" ? "list:1:all" : "list:1:instock",
+            },
+            { text: "➕ Add Product", callback_data: "help:add" },
+          ],
         ],
       },
     };
   }
 
-  let text = `📦 *PRODUCT CATALOG (Page ${page}/${totalPages})*\n\n`;
+  let text = `📦 *PRODUCT CATALOG${filterTitle} (Page ${page}/${totalPages})*\n\n`;
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
 
   for (const item of items) {
@@ -134,15 +142,23 @@ function renderProductList(
 
   const navRow: Array<{ text: string; callback_data: string }> = [];
   if (page > 1) {
-    navRow.push({ text: "◀ Prev", callback_data: `list:${page - 1}` });
+    navRow.push({ text: "◀ Prev", callback_data: `list:${page - 1}:${filter}` });
   }
-  navRow.push({ text: `🔄 Refresh (p.${page})`, callback_data: `refresh:list:${page}` });
+  navRow.push({ text: `🔄 Refresh (p.${page})`, callback_data: `refresh:list:${page}:${filter}` });
   if (page < totalPages) {
-    navRow.push({ text: "Next ▶", callback_data: `list:${page + 1}` });
+    navRow.push({ text: "Next ▶", callback_data: `list:${page + 1}:${filter}` });
   }
   if (navRow.length > 0) {
     keyboard.push(navRow);
   }
+
+  // Filter toggle row + Action buttons
+  keyboard.push([
+    {
+      text: filter === "instock" ? "👁️ Show: All Products" : "🟢 Show: In-Stock Only",
+      callback_data: filter === "instock" ? "list:1:all" : "list:1:instock",
+    },
+  ]);
 
   keyboard.push([
     { text: "➕ Add Product", callback_data: "help:add" },
@@ -247,20 +263,33 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // 1. back:list, list:<page>, or refresh:list:<page>
+      // 1. back:list, list:<page>:<filter>, or refresh:list:<page>:<filter>
       if (cbData === "back:list" || cbData.startsWith("list:") || cbData.startsWith("refresh:list:")) {
-        const rawPage = cbData.startsWith("refresh:list:")
-          ? cbData.split(":")[2]
-          : cbData.startsWith("list:")
-          ? cbData.split(":")[1]
-          : "1";
-        const page = Math.max(1, parseInt(rawPage, 10) || 1);
-        const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+        const parts = cbData.split(":");
+        let pageStr = "1";
+        let filterStr = "all";
+
+        if (cbData.startsWith("refresh:list:")) {
+          pageStr = parts[2] || "1";
+          filterStr = parts[3] || "all";
+        } else if (cbData.startsWith("list:")) {
+          pageStr = parts[1] || "1";
+          filterStr = parts[2] || "all";
+        }
+
+        const filter: "all" | "instock" = filterStr === "instock" ? "instock" : "all";
+        const page = Math.max(1, parseInt(pageStr, 10) || 1);
+        let allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+
+        if (filter === "instock") {
+          allProducts = allProducts.filter((p) => (p.stock ?? 0) > 0);
+        }
+
         const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
         const currentPage = Math.min(page, totalPages);
         const pageItems = allProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-        const rendered = renderProductList(pageItems, currentPage, totalPages);
+        const rendered = renderProductList(pageItems, currentPage, totalPages, filter);
         await bot.api.editMessageText(cbChatId, cbMessageId, rendered.text, {
           parse_mode: "Markdown",
           reply_markup: rendered.reply_markup,
@@ -539,11 +568,17 @@ export async function POST(request: Request) {
 
     // 2. /products or /list
     if (command === "/products" || command === "/list") {
-      const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+      const filter: "all" | "instock" = restText.toLowerCase() === "instock" ? "instock" : "all";
+      let allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+
+      if (filter === "instock") {
+        allProducts = allProducts.filter((p) => (p.stock ?? 0) > 0);
+      }
+
       const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
       const pageItems = allProducts.slice(0, PAGE_SIZE);
 
-      const rendered = renderProductList(pageItems, 1, totalPages);
+      const rendered = renderProductList(pageItems, 1, totalPages, filter);
       if (bot && chatId) {
         await bot.api.sendMessage(chatId, rendered.text, {
           parse_mode: "Markdown",
