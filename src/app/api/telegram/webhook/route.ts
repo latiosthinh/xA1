@@ -70,8 +70,8 @@ function renderHelpMenu(): {
     `• \`/products\` or \`/list\` - Browse products with interactive buttons\n` +
     `• \`/product <id>\` - View details & adjust stock with + / - buttons\n` +
     `• \`/setstock <id> <stock>\` - Update stock level directly\n` +
-    `• \`/addproduct <name> | <price> | <stock> | [imageUrl] | [description]\`\n` +
-    `• \`/editproduct <id> | <name> | <price> | <stock> | [imageUrl] | [description]\`\n` +
+    `• \`/addproduct <name> | <price> | <stock> | [imageUrl] | [duration] | [type] | [warranty]\`\n` +
+    `• \`/editproduct <id> | <name> | <price> | <stock> | [imageUrl] | [duration] | [type] | [warranty]\`\n` +
     `• \`/delproduct <id>\` - Delete product\n\n` +
     `💳 *Order Fulfillment:*\n` +
     `• \`/send <OrderID> 1\` - Complete order & auto-deduct stock\n` +
@@ -201,20 +201,18 @@ function renderProductDetail(product: Product): {
     ? `[\u200B](${product.imageUrl})`
     : "";
 
-  const specs = (product.duration || product.deliveryType || product.warranty)
-    ? {
-        duration: product.duration || "",
-        type: product.deliveryType || "",
-        warranty: product.warranty || "",
-      }
-    : parseProductDescription(product.description);
+  const specs = {
+    duration: product.duration || "",
+    type: product.deliveryType || "",
+    warranty: product.warranty || "",
+  };
 
   const specsText = (specs.duration || specs.type || specs.warranty)
     ? `*Specs:*\n` +
       (specs.duration ? `• ⏱️ Duration: \`${specs.duration}\`\n` : "") +
       (specs.type ? `• 📦 Type: \`${specs.type}\`\n` : "") +
       (specs.warranty ? `• 🛡️ Warranty: \`Warranty ${specs.warranty.replace(/^warranty\s*/i, "")}\`\n` : "")
-    : `*Description:* ${product.description || "_None_"}\n`;
+    : `*Specs:* _None_\n`;
 
   const text = `${imagePreview}${icon} *PRODUCT DETAILS*\n\n` +
     `*ID:* \`${product.id}\`\n` +
@@ -454,7 +452,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
         const p = found[0];
-        const editSyntax = `/editproduct ${p.id} | ${p.name} | ${p.price} | ${p.stock ?? 0} | ${p.imageUrl || ""} | ${p.description || ""}`;
+        const editSyntax = `/editproduct ${p.id} | ${p.name} | ${p.price} | ${p.stock ?? 0} | ${p.imageUrl || ""} | ${p.duration || ""} | ${p.deliveryType || ""} | ${p.warranty || ""}`;
         await bot.api.sendMessage(
           cbChatId,
           `✏️ *To edit product, copy & modify this command:*\n\n\`${editSyntax}\``,
@@ -481,10 +479,12 @@ export async function POST(request: Request) {
         };
         const promptLabel = fieldLabels[field] || field;
 
+        const currentSpecs = [p.duration, p.deliveryType, p.warranty].filter(Boolean).join(" - ");
+
         await bot.api.sendMessage(
           cbChatId,
           `✏️ *Edit ${field.toUpperCase()} for "${p.name}"*\n` +
-            `[ID: \`${p.id}\` | Current: *${field === "price" ? formatDualPrice(p.price) : field === "stock" ? p.stock : field === "specs" ? (p.description || "_None_") : p.name}*]\n\n` +
+            `[ID: \`${p.id}\` | Current: *${field === "price" ? formatDualPrice(p.price) : field === "stock" ? p.stock : field === "specs" ? (currentSpecs || "_None_") : p.name}*]\n\n` +
             `👉 *Reply to this message with ${promptLabel}:*`,
           {
             parse_mode: "Markdown",
@@ -619,7 +619,6 @@ export async function POST(request: Request) {
         if (isSpecsPrompt) {
           const rawSpecInput = rawText.trim();
           const parsed = parseProductDescription(rawSpecInput);
-          const newDesc = formatProductDescription(parsed) || rawSpecInput;
           const dur = parsed.duration || "";
           const dt = parsed.type || "";
           const war = parsed.warranty || "";
@@ -628,7 +627,6 @@ export async function POST(request: Request) {
             duration: dur,
             deliveryType: dt,
             warranty: war,
-            description: newDesc,
           }).where(eq(products.id, prodId));
 
           const updated = {
@@ -636,7 +634,6 @@ export async function POST(request: Request) {
             duration: dur,
             deliveryType: dt,
             warranty: war,
-            description: newDesc,
           };
           const rendered = renderProductDetail(updated);
           if (bot && chatId) {
@@ -856,22 +853,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 5. /addproduct <name> | <price> | <stock> | [imageUrl] | [description]
+    // 5. /addproduct <name> | <price> | <stock> | [imageUrl] | [duration] | [type] | [warranty]
     if (command === "/addproduct") {
       const parts = restText.split("|").map((p: string) => p.trim());
       const name = parts[0];
       const priceStr = parts[1];
       const stockStr = parts[2];
       const imageUrl = parts[3] || "";
-      const description = parts[4] || "";
+      const duration = parts[4] || "";
+      const deliveryType = parts[5] || "";
+      const warranty = parts[6] || "";
 
       const price = Number(priceStr);
       if (!name || isNaN(price) || price < 0) {
         if (bot && chatId) {
           await bot.api.sendMessage(
             chatId,
-            `ℹ️ *Usage:* \`/addproduct <name> | <price> | <stock> | [imageUrl] | [description]\`\n\n` +
-              `*Example:* \`/addproduct Netflix 1 Month | 70000 | 20 | https://img.com/pic.png | 4K Ultra HD\``,
+            `ℹ️ *Usage:* \`/addproduct <name> | <price> | <stock> | [imageUrl] | [duration] | [type] | [warranty]\`\n\n` +
+              `*Example:* \`/addproduct Netflix 1 Month | 70000 | 20 | https://img.com/pic.png | 1 month | Account | Warranty 30 days\``,
             { parse_mode: "Markdown" }
           );
         }
@@ -880,18 +879,16 @@ export async function POST(request: Request) {
 
       const stock = stockStr !== undefined && !isNaN(Number(stockStr)) ? Math.max(0, parseInt(stockStr, 10)) : 0;
       const newId = crypto.randomUUID();
-      const parsedDesc = parseProductDescription(description);
 
       await db.insert(products).values({
         id: newId,
         name,
-        duration: parsedDesc.duration || "",
-        deliveryType: parsedDesc.type || "",
-        warranty: parsedDesc.warranty || "",
+        duration,
+        deliveryType,
+        warranty,
         price,
         stock,
         imageUrl,
-        description,
         createdAt: new Date(),
       });
 
@@ -903,15 +900,17 @@ export async function POST(request: Request) {
             `*Name:* ${name}\n` +
             `*Price:* ${formatDualPrice(price)}\n` +
             `*Stock:* ${stock}\n` +
-            `*Image:* ${imageUrl || "_None_"}\n` +
-            `*Description:* ${description || "_None_"}`,
+            `*Duration:* ${duration || "_None_"}\n` +
+            `*Type:* ${deliveryType || "_None_"}\n` +
+            `*Warranty:* ${warranty || "_None_"}\n` +
+            `*Image:* ${imageUrl || "_None_"}`,
           { parse_mode: "Markdown" }
         );
       }
       return NextResponse.json({ ok: true });
     }
 
-    // 6. /editproduct [id] | [name] | [price] | [stock] | [imageUrl] | [description]
+    // 6. /editproduct [id] | [name] | [price] | [stock] | [imageUrl] | [duration] | [type] | [warranty]
     if (command === "/editproduct") {
       const parts = restText.split("|").map((p: string) => p.trim());
       const prodId = parts[0];
@@ -919,7 +918,9 @@ export async function POST(request: Request) {
       const priceStr = parts[2];
       const stockStr = parts[3];
       const imageUrl = parts[4];
-      const description = parts[5];
+      const duration = parts[5];
+      const deliveryType = parts[6];
+      const warranty = parts[7];
 
       // If no args provided, show product list for user to choose
       if (!prodId) {
@@ -954,12 +955,9 @@ export async function POST(request: Request) {
           ? Math.max(0, parseInt(stockStr, 10))
           : (existing.stock ?? 0);
       const newImageUrl = imageUrl !== undefined ? imageUrl : existing.imageUrl;
-      const newDescription = description !== undefined ? description : existing.description;
-
-      const parsedAttrs = description !== undefined ? parseProductDescription(description) : null;
-      const newDuration = parsedAttrs ? (parsedAttrs.duration || "") : existing.duration;
-      const newDeliveryType = parsedAttrs ? (parsedAttrs.type || "") : existing.deliveryType;
-      const newWarranty = parsedAttrs ? (parsedAttrs.warranty || "") : existing.warranty;
+      const newDuration = duration !== undefined ? duration : existing.duration;
+      const newDeliveryType = deliveryType !== undefined ? deliveryType : existing.deliveryType;
+      const newWarranty = warranty !== undefined ? warranty : existing.warranty;
 
       await db
         .update(products)
@@ -971,7 +969,6 @@ export async function POST(request: Request) {
           price: newPrice,
           stock: newStock,
           imageUrl: newImageUrl,
-          description: newDescription,
         })
         .where(eq(products.id, prodId));
 
@@ -983,8 +980,10 @@ export async function POST(request: Request) {
             `*Name:* ${newName}\n` +
             `*Price:* ${formatDualPrice(newPrice)}\n` +
             `*Stock:* ${newStock}\n` +
-            `*Image:* ${newImageUrl || "_None_"}\n` +
-            `*Description:* ${newDescription || "_None_"}`,
+            `*Duration:* ${newDuration || "_None_"}\n` +
+            `*Type:* ${newDeliveryType || "_None_"}\n` +
+            `*Warranty:* ${newWarranty || "_None_"}\n` +
+            `*Image:* ${newImageUrl || "_None_"}`,
           { parse_mode: "Markdown" }
         );
       }

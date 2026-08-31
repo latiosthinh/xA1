@@ -29,7 +29,6 @@ interface Product {
   duration?: string;
   deliveryType?: string;
   warranty?: string;
-  description?: string;
   price: number;
   stock: number;
   imageUrl: string;
@@ -48,7 +47,6 @@ export default function AdminDashboardPage() {
   const [duration, setDuration] = useState("");
   const [deliveryType, setDeliveryType] = useState("Account");
   const [warranty, setWarranty] = useState("7 days");
-  const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [stock, setStock] = useState("10");
   const [imageUrl, setImageUrl] = useState("");
@@ -110,7 +108,6 @@ export default function AdminDashboardPage() {
     setDuration("");
     setDeliveryType("Account");
     setWarranty("7 days");
-    setDescription("");
     setPrice("");
     setStock("10");
     setImageUrl("");
@@ -121,22 +118,9 @@ export default function AdminDashboardPage() {
   const handleOpenEdit = (p: Product) => {
     setEditingProduct(p);
     setName(p.name);
-    const dur = p.duration || "";
-    const dt = p.deliveryType || "";
-    const war = p.warranty || "";
-
-    if (dur || dt || war) {
-      setDuration(dur);
-      setDeliveryType(dt || "Account");
-      setWarranty(war);
-    } else {
-      const parsed = parseProductDescription(p.description);
-      setDuration(parsed.duration || "");
-      setDeliveryType(parsed.type || "Account");
-      setWarranty(parsed.warranty || "");
-    }
-
-    setDescription(p.description || "");
+    setDuration(p.duration || "");
+    setDeliveryType(p.deliveryType || "Account");
+    setWarranty(p.warranty || "");
     setPrice(String(p.price));
     setStock(String(p.stock ?? 0));
     setImageUrl(p.imageUrl || "");
@@ -155,16 +139,11 @@ export default function AdminDashboardPage() {
     setError("");
 
     try {
-      const formattedDesc = duration || deliveryType || warranty
-        ? formatProductDescription({ duration, type: deliveryType, warranty })
-        : description.trim();
-
       const payload = {
         name: name.trim(),
         duration: duration.trim(),
         deliveryType: deliveryType.trim(),
         warranty: warranty.trim(),
-        description: formattedDesc,
         price: Number(price),
         stock: isNaN(Number(stock)) ? 0 : Number(stock),
         imageUrl: imageUrl.trim(),
@@ -223,7 +202,6 @@ export default function AdminDashboardPage() {
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.description || "").toLowerCase().includes(search.toLowerCase()) ||
       (p.duration || "").toLowerCase().includes(search.toLowerCase()) ||
       (p.deliveryType || "").toLowerCase().includes(search.toLowerCase()) ||
       (p.warranty || "").toLowerCase().includes(search.toLowerCase())
@@ -356,26 +334,12 @@ export default function AdminDashboardPage() {
                         STOCK: {product.stock ?? 0}
                       </span>
                     </div>
-                    {/* Badges / Description */}
-                    {(() => {
-                      const dur = product.duration;
-                      const dt = product.deliveryType;
-                      const war = product.warranty;
-                      if (dur || dt || war) {
-                        return (
-                          <div className="mt-2 flex flex-wrap gap-1 text-[9px] font-pixel">
-                            {dur && <span className="bg-amber-950/60 border border-amber-600/60 text-amber-300 px-1 py-0.5">⏳ {dur}</span>}
-                            {dt && <span className="bg-sky-950/60 border border-sky-600/60 text-sky-300 px-1 py-0.5">📦 {dt}</span>}
-                            {war && <span className="bg-emerald-950/60 border border-emerald-600/60 text-emerald-300 px-1 py-0.5">🛡️ {war.startsWith("Warranty") ? war : `Warranty ${war}`}</span>}
-                          </div>
-                        );
-                      }
-                      return (
-                        <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed bg-[#0e111f] p-2 border border-slate-800">
-                          {product.description || "No description provided."}
-                        </p>
-                      );
-                    })()}
+                    {/* Badges */}
+                    <div className="mt-2 flex flex-wrap gap-1 text-[9px] font-pixel">
+                      {product.duration && <span className="bg-amber-950/60 border border-amber-600/60 text-amber-300 px-1 py-0.5">⏳ {product.duration}</span>}
+                      {product.deliveryType && <span className="bg-sky-950/60 border border-sky-600/60 text-sky-300 px-1 py-0.5">📦 {product.deliveryType}</span>}
+                      {product.warranty && <span className="bg-emerald-950/60 border border-emerald-600/60 text-emerald-300 px-1 py-0.5">🛡️ {product.warranty.startsWith("Warranty") ? product.warranty : `Warranty ${product.warranty}`}</span>}
+                    </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t-2 border-slate-800 flex items-center justify-end gap-2">

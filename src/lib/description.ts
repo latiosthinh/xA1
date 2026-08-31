@@ -43,21 +43,12 @@ export function getEffectiveProductAttributes(product: {
   duration?: string | null;
   deliveryType?: string | null;
   warranty?: string | null;
-  description?: string | null;
 }): { duration: string; type: string; warranty: string } {
-  const dur = (product.duration || "").trim();
-  const dt = (product.deliveryType || "").trim();
-  const war = (product.warranty || "").trim();
-
-  if (dur || dt || war) {
-    return { duration: dur, type: dt, warranty: war };
-  }
-
-  const parsed = parseProductDescription(product.description);
   return {
-    duration: parsed.duration || "",
-    type: parsed.type || "",
-    warranty: parsed.warranty || "",
+    duration: (product.duration || "").trim(),
+    type: (product.deliveryType || "").trim(),
+    warranty: (product.warranty || "").trim(),
   };
 }
+
 

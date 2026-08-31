@@ -6,7 +6,6 @@ export const products = sqliteTable("products", {
   duration: text("duration").default(""),
   deliveryType: text("delivery_type").default(""),
   warranty: text("warranty").default(""),
-  description: text("description").default(""),
   price: real("price").notNull(),
   stock: integer("stock").notNull().default(0),
   imageUrl: text("image_url").default(""),

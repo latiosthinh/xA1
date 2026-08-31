@@ -92,7 +92,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           </div>
         </div>
 
-        {/* Description & Specs Badge */}
+        {/* Specs Badge */}
         {(() => {
           const specs = getEffectiveProductAttributes(product);
           const hasSpecs = Boolean(specs.duration || specs.type || specs.warranty);
@@ -122,11 +122,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
             );
           }
 
-          return (
-            <p className="text-xs text-[#b8a896] mt-3 line-clamp-2 leading-relaxed bg-[#14120e] p-2 border border-[#332b20]">
-              {product.description || "Digital Game Item - Instant delivery to browser."}
-            </p>
-          );
+          return null;
         })()}
       </div>
 

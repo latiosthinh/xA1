@@ -21,7 +21,6 @@ export async function initDb() {
       duration TEXT DEFAULT '',
       delivery_type TEXT DEFAULT '',
       warranty TEXT DEFAULT '',
-      description TEXT DEFAULT '',
       price REAL NOT NULL,
       stock INTEGER NOT NULL DEFAULT 0,
       image_url TEXT DEFAULT '',
@@ -43,44 +42,14 @@ export async function initDb() {
     await rawClient.execute(`ALTER TABLE products ADD COLUMN warranty TEXT DEFAULT '';`);
   } catch {}
 
-  // Migrate existing description strings to duration/delivery_type/warranty columns
+  // Drop description column if present in products table
   try {
-    const existing = await rawClient.execute(`
-      SELECT id, description, duration, delivery_type, warranty FROM products
-      WHERE (duration IS NULL OR duration = '') 
-        AND description IS NOT NULL 
-        AND description != '';
-    `);
-
-    for (const row of existing.rows) {
-      const id = String(row.id);
-      const descStr = String(row.description || "");
-      const segments = descStr.split("-").map((s) => s.trim()).filter(Boolean);
-      let dur = "";
-      let dt = "";
-      let war = "";
-
-      if (segments.length >= 3) {
-        dur = segments[0];
-        dt = segments[1];
-        war = segments.slice(2).join(" - ");
-      } else if (segments.length === 2) {
-        dur = segments[0];
-        dt = segments[1];
-      } else if (segments.length === 1) {
-        dur = segments[0];
-      }
-
-      if (dur || dt || war) {
-        await rawClient.execute({
-          sql: `UPDATE products SET duration = ?, delivery_type = ?, warranty = ? WHERE id = ?;`,
-          args: [dur, dt, war, id],
-        });
-      }
+    const tableInfo = await rawClient.execute("PRAGMA table_info(products);");
+    const hasDesc = tableInfo.rows.some((r: any) => String(r.name) === "description");
+    if (hasDesc) {
+      await rawClient.execute("ALTER TABLE products DROP COLUMN description;");
     }
-  } catch (err) {
-    console.warn("Product attribute data migration note:", err);
-  }
+  } catch {}
 
   await rawClient.execute(`
     CREATE TABLE IF NOT EXISTS orders (
