@@ -731,10 +731,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 0. Reply-to-message prompt handler (Interactive ForceReply for each attribute)
+    // 0. Reply-to-message prompt handler (Interactive ForceReply for auth password or product attributes)
     const replyTo = messageObj?.reply_to_message;
     if (replyTo && replyTo.text) {
       const parentText: string = replyTo.text;
+
+      // Handle Admin Password Prompt
+      if (parentText.includes("ADMIN AUTHENTICATION") || parentText.includes("Admin Password")) {
+        const inputPassword = rawText.trim();
+        const expectedPassword = process.env.ADMIN_PASSWORD || "admin";
+
+        if (inputPassword === expectedPassword) {
+          const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+          const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
+          const pageItems = allProducts.slice(0, PAGE_SIZE);
+          const rendered = renderProductList(pageItems, 1, totalPages, "all", "edit");
+
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `🔓 *Password Verified! Welcome to Admin Panel.*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+        } else {
+          if (bot && chatId) {
+            await bot.api.sendMessage(
+              chatId,
+              `⛔ *Incorrect Password.* Access denied. Use \`/startadmin\` to try again.`,
+              { parse_mode: "Markdown" }
+            );
+          }
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       const idMatch = parentText.match(/\[ID:\s*`?([a-zA-Z0-9_-]+)`?/i) || parentText.match(/ID:\s*`?([a-zA-Z0-9_-]+)`?/i);
       const fieldMatch = parentText.match(/Field:\s*`?([a-zA-Z0-9_-]+)`?/i);
       const isStockPrompt = fieldMatch ? fieldMatch[1] === "stock" : (parentText.includes("Edit STOCK") || parentText.includes("Stock Number"));
@@ -921,26 +952,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 1. /start handler (Secret passcode check vs standard customer buy catalog)
+    // 1. /start handler (Customer Storefront Catalog to Buy)
     if (command === "/start") {
-      const code = restText.trim();
       const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
       const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
       const pageItems = allProducts.slice(0, PAGE_SIZE);
 
-      // If user types `/start 4542` -> Enter Admin Edit Mode
-      if (code === "4542") {
-        if (bot && chatId) {
-          const rendered = renderProductList(pageItems, 1, totalPages, "all", "edit");
-          await bot.api.sendMessage(chatId, rendered.text, {
-            parse_mode: "Markdown",
-            reply_markup: rendered.reply_markup,
-          });
-        }
-        return NextResponse.json({ ok: true });
-      }
-
-      // Standard `/start` without secret -> Customer Storefront Catalog to Buy
       if (bot && chatId) {
         const rendered = renderCustomerProductList(pageItems, 1, totalPages);
         await bot.api.sendMessage(chatId, rendered.text, {
@@ -951,7 +968,53 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 1.1 /help
+    // 1.1 /startadmin handler (Requests ADMIN_PASSWORD for verification)
+    if (command === "/startadmin") {
+      const inlinePass = restText.trim();
+      const expectedPassword = process.env.ADMIN_PASSWORD || "admin";
+
+      // If user provided password inline: `/startadmin <password>`
+      if (inlinePass) {
+        if (inlinePass === expectedPassword) {
+          const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+          const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
+          const pageItems = allProducts.slice(0, PAGE_SIZE);
+          const rendered = renderProductList(pageItems, 1, totalPages, "all", "edit");
+
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `🔓 *Password Verified! Welcome to Admin Panel.*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+        } else {
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `⛔ *Incorrect Password.* Access denied.`, { parse_mode: "Markdown" });
+          }
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      // If no password provided, prompt via ForceReply
+      if (bot && chatId) {
+        await bot.api.sendMessage(
+          chatId,
+          `🔐 *ADMIN AUTHENTICATION REQUIRED*\n\n` +
+            `👉 *Reply to this message with your Admin Password:*`,
+          {
+            parse_mode: "Markdown",
+            reply_markup: {
+              force_reply: true,
+              selective: true,
+            },
+          }
+        );
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // 1.2 /help
     if (command === "/help") {
       if (bot && chatId) {
         const rendered = renderHelpMenu();
