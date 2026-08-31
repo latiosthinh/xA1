@@ -201,7 +201,7 @@ function renderProductList(
 
   let text = `📦 *PRODUCT CATALOG${modeTitle}${filterTitle} (Page ${page}/${totalPages})*\n\n`;
   if (mode === "edit") {
-    text += `_Select a product below to get the edit command template:_\n\n`;
+    text += `_Tap any product below to open its attribute editing panel:_\n\n`;
   }
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
 
@@ -213,7 +213,7 @@ function renderProductList(
       `💰 Price: ${formatDualPrice(item.price)} | 📊 Stock: ${stockStatus}\n\n`;
 
     const buttonStockIndicator = inStock ? `🟢 (${item.stock})` : `🔴 (0)`;
-    const cb = mode === "edit" ? `edit:${item.id}` : `view:${item.id}`;
+    const cb = `view:${item.id}`;
     const btnLabel = mode === "edit" ? `✏️ ${item.name}` : `${icon} ${item.name} ${buttonStockIndicator}`;
     keyboard.push([
       {
