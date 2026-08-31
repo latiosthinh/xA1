@@ -98,6 +98,81 @@ function renderHelpMenu(): {
   return { text, reply_markup: { inline_keyboard: keyboard } };
 }
 
+type TelegramInlineButton =
+  | { text: string; callback_data: string }
+  | { text: string; url: string };
+
+function renderCustomerProductList(
+  items: Product[],
+  page: number,
+  totalPages: number
+): { text: string; reply_markup: { inline_keyboard: TelegramInlineButton[][] } } {
+  const storeUrl = process.env.NEXT_PUBLIC_APP_URL || "https://store.xa1.space";
+
+  if (items.length === 0) {
+    return {
+      text: `🛍️ *Welcome to MMO Store!*\n\nNo products currently listed. Check back soon!`,
+      reply_markup: {
+        inline_keyboard: [[{ text: "🌐 Open Web Store", url: storeUrl }]],
+      },
+    };
+  }
+
+  let text = `🛍️ *MMO STORE CATALOG (Page ${page}/${totalPages})*\n\n` +
+    `_Tap any item to view details & buy instantly:_\n\n`;
+
+  const keyboard: TelegramInlineButton[][] = [];
+
+  for (const item of items) {
+    const icon = getProductIcon(item.name);
+    const inStock = (item.stock ?? 0) > 0;
+    const stockStatus = inStock ? `🟢 In Stock (${item.stock})` : "🔴 Sold Out";
+
+    text += `${icon} *${item.name}*\n` +
+      `💰 Price: *${formatDualPrice(item.price)}* | ${stockStatus}\n`;
+
+    const specs = [item.duration, item.deliveryType, item.warranty ? `Warranty ${item.warranty.replace(/^warranty\s*/i, "")}` : ""].filter(Boolean);
+    if (specs.length > 0) {
+      text += `📋 _${specs.join(" • ")}_\n`;
+    }
+    text += `\n`;
+
+    if (inStock) {
+      keyboard.push([
+        {
+          text: `🛒 Buy ${item.name} - ${formatDualPrice(item.price)}`,
+          url: `${storeUrl}?buy=${item.id}`,
+        },
+      ]);
+    } else {
+      keyboard.push([
+        {
+          text: `🚫 ${item.name} (Sold Out)`,
+          callback_data: "buy:soldout",
+        },
+      ]);
+    }
+  }
+
+  const navRow: TelegramInlineButton[] = [];
+  if (page > 1) {
+    navRow.push({ text: "◀ Prev", callback_data: `userlist:${page - 1}` });
+  }
+  if (page < totalPages) {
+    navRow.push({ text: "Next ▶", callback_data: `userlist:${page + 1}` });
+  }
+  if (navRow.length > 0) {
+    keyboard.push(navRow);
+  }
+
+  keyboard.push([{ text: "🌐 Open Storefront in Browser", url: storeUrl }]);
+
+  return {
+    text: text.trim(),
+    reply_markup: { inline_keyboard: keyboard },
+  };
+}
+
 function renderProductList(
   items: Product[],
   page: number,
@@ -221,29 +296,33 @@ function renderProductDetail(product: Product): {
     `*Stock:* ${stockStatus}\n` +
     `*Image:* ${product.imageUrl ? `[View Image](${product.imageUrl})` : "_None_"}\n` +
     specsText + `\n` +
-    `_Use buttons below to edit fields, adjust stock or delete._`;
+    `_Tap any attribute below to edit directly:_`;
 
   const keyboard = [
     [
+      { text: "🏷️ Edit Name", callback_data: `input:name:${product.id}` },
+      { text: "💰 Edit Price", callback_data: `input:price:${product.id}` },
+    ],
+    [
+      { text: "📦 Edit Stock", callback_data: `input:stock:${product.id}` },
+      { text: "⏱️ Edit Duration", callback_data: `input:duration:${product.id}` },
+    ],
+    [
+      { text: "📦 Edit Type", callback_data: `input:type:${product.id}` },
+      { text: "🛡️ Edit Warranty", callback_data: `input:warranty:${product.id}` },
+    ],
+    [
+      { text: "🖼️ Edit Image", callback_data: `input:image:${product.id}` },
+      { text: "🗑️ Delete Product", callback_data: `del:${product.id}` },
+    ],
+    [
       { text: "➖ Stock -1", callback_data: `stock:${product.id}:-` },
-      { text: `📊 ${stock}`, callback_data: `stock:${product.id}:noop` },
+      { text: `📊 Stock: ${stock}`, callback_data: `stock:${product.id}:noop` },
       { text: "➕ Stock +1", callback_data: `stock:${product.id}:+` },
     ],
     [
-      { text: "📦 Set Stock", callback_data: `input:stock:${product.id}` },
-      { text: "💰 Set Price", callback_data: `input:price:${product.id}` },
-    ],
-    [
-      { text: "🏷️ Rename", callback_data: `input:name:${product.id}` },
-      { text: "📝 Edit Specs", callback_data: `input:specs:${product.id}` },
-    ],
-    [
-      { text: "✏️ Full Edit", callback_data: `edit:${product.id}` },
-      { text: "🗑️ Delete", callback_data: `del:${product.id}` },
-    ],
-    [
       { text: "🔄 Refresh", callback_data: `refresh:view:${product.id}` },
-      { text: "◀ Back to List", callback_data: "back:list" },
+      { text: "◀ Back to List", callback_data: "list:1:all:edit" },
     ],
   ];
 
@@ -300,7 +379,30 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // 1. back:list, list:<page>:<filter>:<mode>, or refresh:list:<page>:<filter>:<mode>
+      // 0. userlist:<page> (Customer browsing for purchase)
+      if (cbData.startsWith("userlist:")) {
+        const page = Math.max(1, parseInt(cbData.split(":")[1] || "1", 10));
+        const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+        const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
+        const currentPage = Math.min(page, totalPages);
+        const pageItems = allProducts.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+        const rendered = renderCustomerProductList(pageItems, currentPage, totalPages);
+        await bot.api.editMessageText(cbChatId, cbMessageId, rendered.text, {
+          parse_mode: "Markdown",
+          reply_markup: rendered.reply_markup,
+        });
+        await bot.api.answerCallbackQuery(cbId);
+        return NextResponse.json({ ok: true });
+      }
+
+      if (cbData === "buy:soldout") {
+        await bot.api.answerCallbackQuery(cbId, {
+          text: "⚠️ This item is currently out of stock. Please check back later!",
+          show_alert: true,
+        });
+        return NextResponse.json({ ok: true });
+      }
       if (cbData === "back:list" || cbData.startsWith("list:") || cbData.startsWith("refresh:list:")) {
         const parts = cbData.split(":");
         let pageStr = "1";
@@ -462,7 +564,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true });
       }
 
-      // 4.1 input:stock:<id>, input:price:<id>, input:name:<id>, input:specs:<id> -> ForceReply prompt
+      // 4.1 input:stock:<id>, input:price:<id>, input:name:<id>, input:duration:<id>, input:type:<id>, input:warranty:<id>, input:image:<id> -> ForceReply prompt
       if (cbData.startsWith("input:")) {
         const [, field, prodId] = cbData.split(":");
         const found = await db.select().from(products).where(eq(products.id, prodId)).limit(1);
@@ -471,21 +573,57 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
         const p = found[0];
-        const fieldLabels: Record<string, string> = {
-          stock: "New Stock Number (e.g. 25)",
-          price: "New Price in VND (e.g. 150000)",
-          name: "New Product Name",
-          specs: "Duration - Type - Warranty (e.g. 10 months - Link - Warranty 24H)",
+        const fieldQuestions: Record<string, { prompt: string; example: string; current: string }> = {
+          name: {
+            prompt: "What new product name would you like to use?",
+            example: "e.g. Claude 3.7 Sonnet Max 5X",
+            current: p.name,
+          },
+          price: {
+            prompt: "What new price in VND would you like to set?",
+            example: "e.g. 150000",
+            current: formatDualPrice(p.price),
+          },
+          stock: {
+            prompt: "What new stock quantity would you like to set?",
+            example: "e.g. 25",
+            current: String(p.stock ?? 0),
+          },
+          duration: {
+            prompt: "What duration would you like to set?",
+            example: "e.g. 1 month, 6 months, 1 year",
+            current: p.duration || "_None_",
+          },
+          type: {
+            prompt: "What delivery type would you like to set?",
+            example: "e.g. Account, Link, Key, Email",
+            current: p.deliveryType || "_None_",
+          },
+          warranty: {
+            prompt: "What warranty period would you like to set?",
+            example: "e.g. 24H, 7 days, 1 month, Full time",
+            current: p.warranty || "_None_",
+          },
+          image: {
+            prompt: "What image URL would you like to set?",
+            example: "e.g. https://domain.com/icon.png",
+            current: p.imageUrl || "_None_",
+          },
         };
-        const promptLabel = fieldLabels[field] || field;
 
-        const currentSpecs = [p.duration, p.deliveryType, p.warranty].filter(Boolean).join(" - ");
+        const config = fieldQuestions[field] || {
+          prompt: `What new ${field} would you like to set?`,
+          example: "",
+          current: "_None_",
+        };
 
         await bot.api.sendMessage(
           cbChatId,
-          `✏️ *Edit ${field.toUpperCase()} for "${p.name}"*\n` +
-            `[ID: \`${p.id}\` | Current: *${field === "price" ? formatDualPrice(p.price) : field === "stock" ? p.stock : field === "specs" ? (currentSpecs || "_None_") : p.name}*]\n\n` +
-            `👉 *Reply to this message with ${promptLabel}:*`,
+          `✏️ *Editing ${field.toUpperCase()} for "${p.name}"*\n` +
+            `[ID: \`${p.id}\` | Field: \`${field}\` | Current: *${config.current}*]\n\n` +
+            `❓ *${config.prompt}*\n` +
+            (config.example ? `_${config.example}_\n\n` : "\n") +
+            `👉 *Reply to this message with your new value:*`,
           {
             parse_mode: "Markdown",
             reply_markup: {
@@ -593,17 +731,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 0. Reply-to-message prompt handler (Interactive ForceReply for stock, price, name, specs)
+    // 0. Reply-to-message prompt handler (Interactive ForceReply for each attribute)
     const replyTo = messageObj?.reply_to_message;
     if (replyTo && replyTo.text) {
       const parentText: string = replyTo.text;
       const idMatch = parentText.match(/\[ID:\s*`?([a-zA-Z0-9_-]+)`?/i) || parentText.match(/ID:\s*`?([a-zA-Z0-9_-]+)`?/i);
-      const isStockPrompt = parentText.includes("Edit STOCK") || parentText.includes("Stock Number");
-      const isPricePrompt = parentText.includes("Edit PRICE") || parentText.includes("Price in VND");
-      const isNamePrompt = parentText.includes("Edit NAME") || parentText.includes("Product Name");
-      const isSpecsPrompt = parentText.includes("Edit SPECS") || parentText.includes("Duration - Type - Warranty");
+      const fieldMatch = parentText.match(/Field:\s*`?([a-zA-Z0-9_-]+)`?/i);
+      const isStockPrompt = fieldMatch ? fieldMatch[1] === "stock" : (parentText.includes("Edit STOCK") || parentText.includes("Stock Number"));
+      const isPricePrompt = fieldMatch ? fieldMatch[1] === "price" : (parentText.includes("Edit PRICE") || parentText.includes("Price in VND"));
+      const isNamePrompt = fieldMatch ? fieldMatch[1] === "name" : (parentText.includes("Edit NAME") || parentText.includes("Product Name"));
+      const isDurationPrompt = fieldMatch ? fieldMatch[1] === "duration" : parentText.includes("Edit DURATION");
+      const isTypePrompt = fieldMatch ? fieldMatch[1] === "type" : parentText.includes("Edit TYPE");
+      const isWarrantyPrompt = fieldMatch ? fieldMatch[1] === "warranty" : parentText.includes("Edit WARRANTY");
+      const isImagePrompt = fieldMatch ? fieldMatch[1] === "image" : parentText.includes("Edit IMAGE");
 
-      if (idMatch && (isStockPrompt || isPricePrompt || isNamePrompt || isSpecsPrompt)) {
+      if (idMatch && (isStockPrompt || isPricePrompt || isNamePrompt || isDurationPrompt || isTypePrompt || isWarrantyPrompt || isImagePrompt)) {
         const prodId = idMatch[1];
         const found = await db.select().from(products).where(eq(products.id, prodId)).limit(1);
 
@@ -616,49 +758,19 @@ export async function POST(request: Request) {
 
         const p = found[0];
 
-        if (isSpecsPrompt) {
-          const rawSpecInput = rawText.trim();
-          const parsed = parseProductDescription(rawSpecInput);
-          const dur = parsed.duration || "";
-          const dt = parsed.type || "";
-          const war = parsed.warranty || "";
-
-          await db.update(products).set({
-            duration: dur,
-            deliveryType: dt,
-            warranty: war,
-          }).where(eq(products.id, prodId));
-
-          const updated = {
-            ...p,
-            duration: dur,
-            deliveryType: dt,
-            warranty: war,
-          };
-          const rendered = renderProductDetail(updated);
-          if (bot && chatId) {
-            await bot.api.sendMessage(chatId, `✅ *Specs & Warranty Updated!*`, { parse_mode: "Markdown" });
-            await bot.api.sendMessage(chatId, rendered.text, {
-              parse_mode: "Markdown",
-              reply_markup: rendered.reply_markup,
-            });
-          }
-          return NextResponse.json({ ok: true });
-        }
-
-        if (isStockPrompt) {
-          const newStock = parseInt(rawText.trim(), 10);
-          if (isNaN(newStock) || newStock < 0) {
+        if (isNamePrompt) {
+          const newName = rawText.trim();
+          if (!newName) {
             if (bot && chatId) {
-              await bot.api.sendMessage(chatId, `⚠️ Please enter a valid non-negative number for stock (e.g. \`15\`).`, { parse_mode: "Markdown" });
+              await bot.api.sendMessage(chatId, `⚠️ Name cannot be empty.`, { parse_mode: "Markdown" });
             }
             return NextResponse.json({ ok: true });
           }
-          await db.update(products).set({ stock: newStock }).where(eq(products.id, prodId));
-          const updated = { ...p, stock: newStock };
+          await db.update(products).set({ name: newName }).where(eq(products.id, prodId));
+          const updated = { ...p, name: newName };
           const rendered = renderProductDetail(updated);
           if (bot && chatId) {
-            await bot.api.sendMessage(chatId, `✅ *Stock Updated to ${newStock}!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, `✅ *Product Renamed to "${newName}"!*`, { parse_mode: "Markdown" });
             await bot.api.sendMessage(chatId, rendered.text, {
               parse_mode: "Markdown",
               reply_markup: rendered.reply_markup,
@@ -688,19 +800,79 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: true });
         }
 
-        if (isNamePrompt) {
-          const newName = rawText.trim();
-          if (!newName) {
+        if (isStockPrompt) {
+          const newStock = parseInt(rawText.trim(), 10);
+          if (isNaN(newStock) || newStock < 0) {
             if (bot && chatId) {
-              await bot.api.sendMessage(chatId, `⚠️ Name cannot be empty.`, { parse_mode: "Markdown" });
+              await bot.api.sendMessage(chatId, `⚠️ Please enter a valid non-negative number for stock (e.g. \`15\`).`, { parse_mode: "Markdown" });
             }
             return NextResponse.json({ ok: true });
           }
-          await db.update(products).set({ name: newName }).where(eq(products.id, prodId));
-          const updated = { ...p, name: newName };
+          await db.update(products).set({ stock: newStock }).where(eq(products.id, prodId));
+          const updated = { ...p, stock: newStock };
           const rendered = renderProductDetail(updated);
           if (bot && chatId) {
-            await bot.api.sendMessage(chatId, `✅ *Product Renamed to "${newName}"!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, `✅ *Stock Updated to ${newStock}!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isDurationPrompt) {
+          const newDuration = rawText.trim();
+          await db.update(products).set({ duration: newDuration }).where(eq(products.id, prodId));
+          const updated = { ...p, duration: newDuration };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Duration Updated to "${newDuration || 'None'}"!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isTypePrompt) {
+          const newType = rawText.trim();
+          await db.update(products).set({ deliveryType: newType }).where(eq(products.id, prodId));
+          const updated = { ...p, deliveryType: newType };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Delivery Type Updated to "${newType || 'None'}"!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isWarrantyPrompt) {
+          const newWarranty = rawText.trim();
+          await db.update(products).set({ warranty: newWarranty }).where(eq(products.id, prodId));
+          const updated = { ...p, warranty: newWarranty };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Warranty Updated to "${newWarranty || 'None'}"!*`, { parse_mode: "Markdown" });
+            await bot.api.sendMessage(chatId, rendered.text, {
+              parse_mode: "Markdown",
+              reply_markup: rendered.reply_markup,
+            });
+          }
+          return NextResponse.json({ ok: true });
+        }
+
+        if (isImagePrompt) {
+          const newImage = rawText.trim();
+          await db.update(products).set({ imageUrl: newImage }).where(eq(products.id, prodId));
+          const updated = { ...p, imageUrl: newImage };
+          const rendered = renderProductDetail(updated);
+          if (bot && chatId) {
+            await bot.api.sendMessage(chatId, `✅ *Image URL Updated!*`, { parse_mode: "Markdown" });
             await bot.api.sendMessage(chatId, rendered.text, {
               parse_mode: "Markdown",
               reply_markup: rendered.reply_markup,
@@ -749,8 +921,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    // 1. /help or /start
-    if (command === "/help" || command === "/start") {
+    // 1. /start handler (Secret passcode check vs standard customer buy catalog)
+    if (command === "/start") {
+      const code = restText.trim();
+      const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+      const totalPages = Math.max(1, Math.ceil(allProducts.length / PAGE_SIZE));
+      const pageItems = allProducts.slice(0, PAGE_SIZE);
+
+      // If user types `/start 4542` -> Enter Admin Edit Mode
+      if (code === "4542") {
+        if (bot && chatId) {
+          const rendered = renderProductList(pageItems, 1, totalPages, "all", "edit");
+          await bot.api.sendMessage(chatId, rendered.text, {
+            parse_mode: "Markdown",
+            reply_markup: rendered.reply_markup,
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
+
+      // Standard `/start` without secret -> Customer Storefront Catalog to Buy
+      if (bot && chatId) {
+        const rendered = renderCustomerProductList(pageItems, 1, totalPages);
+        await bot.api.sendMessage(chatId, rendered.text, {
+          parse_mode: "Markdown",
+          reply_markup: rendered.reply_markup,
+        });
+      }
+      return NextResponse.json({ ok: true });
+    }
+
+    // 1.1 /help
+    if (command === "/help") {
       if (bot && chatId) {
         const rendered = renderHelpMenu();
         await bot.api.sendMessage(chatId, rendered.text, {
