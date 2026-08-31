@@ -92,32 +92,43 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           </div>
         </div>
 
-        {/* Specs Badge */}
+        {/* Attribute Specs - Clean RPG Stat Strip */}
         {(() => {
           const specs = getEffectiveProductAttributes(product);
           const hasSpecs = Boolean(specs.duration || specs.type || specs.warranty);
 
           if (hasSpecs) {
             return (
-              <div className="mt-3 flex flex-wrap gap-1.5 text-[10px] font-pixel">
-                {specs.duration && (
-                  <span className="bg-[#1c140d] border border-[#d97706]/40 text-[#fcd34d] px-1.5 py-0.5 shadow-pixel-sm flex items-center gap-1">
-                    <span className="text-[11px] leading-none">⏳</span>
-                    <span>{specs.duration}</span>
+              <div className="mt-3.5 pt-2.5 border-t border-[#332b20]/90 grid grid-cols-3 gap-1 bg-[#14120e]/60 p-1.5 border border-[#2b241c]">
+                {/* 1. Duration */}
+                <div className="flex flex-col items-center justify-center text-center px-1 border-r border-[#2b241c] last:border-r-0">
+                  <span className="font-pixel text-[8px] tracking-wider text-[#8c7e6e] uppercase">
+                    DURATION
                   </span>
-                )}
-                {specs.type && (
-                  <span className="bg-[#14181f] border border-[#38bdf8]/40 text-[#7dd3fc] px-1.5 py-0.5 shadow-pixel-sm flex items-center gap-1">
-                    <span className="text-[11px] leading-none">📦</span>
-                    <span>{specs.type}</span>
+                  <span className="font-mono text-[11px] font-semibold text-[#f4eee0] truncate max-w-full mt-0.5" title={specs.duration}>
+                    {specs.duration || "—"}
                   </span>
-                )}
-                {specs.warranty && (
-                  <span className="bg-[#141f17] border border-[#22c55e]/40 text-[#86efac] px-1.5 py-0.5 shadow-pixel-sm flex items-center gap-1">
-                    <span className="text-[11px] leading-none">🛡️</span>
-                    <span>{specs.warranty.toLowerCase().startsWith("warranty") ? specs.warranty : `Warranty ${specs.warranty}`}</span>
+                </div>
+
+                {/* 2. Type */}
+                <div className="flex flex-col items-center justify-center text-center px-1 border-r border-[#2b241c] last:border-r-0">
+                  <span className="font-pixel text-[8px] tracking-wider text-[#8c7e6e] uppercase">
+                    TYPE
                   </span>
-                )}
+                  <span className="font-mono text-[11px] font-semibold text-[#38bdf8] truncate max-w-full mt-0.5" title={specs.type}>
+                    {specs.type || "—"}
+                  </span>
+                </div>
+
+                {/* 3. Warranty */}
+                <div className="flex flex-col items-center justify-center text-center px-1">
+                  <span className="font-pixel text-[8px] tracking-wider text-[#8c7e6e] uppercase">
+                    WARRANTY
+                  </span>
+                  <span className="font-mono text-[11px] font-semibold text-[#4ade80] truncate max-w-full mt-0.5" title={specs.warranty}>
+                    {specs.warranty ? specs.warranty.replace(/^warranty\s*/i, "") : "—"}
+                  </span>
+                </div>
               </div>
             );
           }
